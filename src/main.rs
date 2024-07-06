@@ -16,25 +16,34 @@ const OFFICER_ROLE: &str = "officer";
 async fn main() {
     dotenvy::dotenv().ok();
 
-    let datbase_url = env::var("DATABASE_URL")
-        .expect("No `DATABASE_URL` environment variable specified");
+    let datbase_url =
+        env::var("DATABASE_URL").expect("No `DATABASE_URL` environment variable specified");
 
-    let discord_token = env::var("DISCORD_TOKEN")
-        .expect("No `DISCORD_TOKEN` environment variable specified");
+    let discord_token =
+        env::var("DISCORD_TOKEN").expect("No `DISCORD_TOKEN` environment variable specified");
 
-    let db = DbContext::connect(&datbase_url).await
+    let db = DbContext::connect(&datbase_url)
+        .await
         .expect("failed to connect to database");
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![commands::competitions::competition(), commands::competitions::bingo()],
+            commands: vec![
+                commands::competitions::competition(),
+                commands::competitions::bingo(),
+            ],
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 // register the bots commands with discord api on startup
                 //poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                poise::builtins::register_in_guild(ctx, &framework.options().commands, B01LERS_GUILD_ID).await?;
+                poise::builtins::register_in_guild(
+                    ctx,
+                    &framework.options().commands,
+                    B01LERS_GUILD_ID,
+                )
+                .await?;
                 Ok(CommandContext::new(db))
             })
         })

@@ -1,9 +1,13 @@
 use std::io::Cursor;
 
-use image::{imageops::{overlay, FilterType}, io::Reader as ImageReader, DynamicImage, ImageFormat};
-use serenity::all::ChannelId;
-use sqlx::sqlite::{SqlitePoolOptions, SqlitePool};
 use enumflags2::BitFlags;
+use image::{
+    imageops::{overlay, FilterType},
+    io::Reader as ImageReader,
+    DynamicImage, ImageFormat,
+};
+use serenity::all::ChannelId;
+use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
 pub struct DbContext {
     pool: SqlitePool,
@@ -15,27 +19,38 @@ impl DbContext {
         // TODO: idk what is a good value for max connections
         let pool = SqlitePoolOptions::new()
             .max_connections(5)
-            .connect(url).await?;
+            .connect(url)
+            .await?;
 
-        Ok(DbContext {
-            pool,
-        })
+        Ok(DbContext { pool })
     }
 
     pub async fn create_competiton(&self, competition: Competition) -> Result<(), anyhow::Error> {
         let competition_raw: CompetitionRaw = competition.into();
-        sqlx::query!("INSERT INTO competition (channel_id, name, bingo) VALUES (?, ?, ?)", competition_raw.channel_id, competition_raw.name, competition_raw.bingo)
-            .execute(&self.pool)
-            .await?;
+        sqlx::query!(
+            "INSERT INTO competition (channel_id, name, bingo) VALUES (?, ?, ?)",
+            competition_raw.channel_id,
+            competition_raw.name,
+            competition_raw.bingo
+        )
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }
 
-    pub async fn get_competition(&self, channel_id: ChannelId) -> Result<Competition, anyhow::Error> {
+    pub async fn get_competition(
+        &self,
+        channel_id: ChannelId,
+    ) -> Result<Competition, anyhow::Error> {
         let channel_id = channel_id.get() as i64;
-        let competition_raw = sqlx::query_as!(CompetitionRaw, "SELECT * FROM competition WHERE channel_id = ?", channel_id)
-            .fetch_one(&self.pool)
-            .await?;
+        let competition_raw = sqlx::query_as!(
+            CompetitionRaw,
+            "SELECT * FROM competition WHERE channel_id = ?",
+            channel_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
 
         Ok(competition_raw.into())
     }
@@ -47,7 +62,9 @@ impl DbContext {
             competition_raw.name,
             competition_raw.bingo,
             competition_raw.channel_id,
-        ).execute(&self.pool).await?;
+        )
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }

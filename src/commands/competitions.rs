@@ -2,8 +2,11 @@ use anyhow::Context;
 use poise::CreateReply;
 use serenity::all::{Builder, CreateAttachment, CreateChannel, CreateEmbed, CreateMessage};
 
-use crate::{db::{BingoSquare, Competition}, B01LERS_GUILD_ID, CTF_CATEGORY_ID};
 use super::{has_perms, CmdContext, Error};
+use crate::{
+    db::{BingoSquare, Competition},
+    B01LERS_GUILD_ID, CTF_CATEGORY_ID,
+};
 
 /// Creates a new ctf competition thread
 #[poise::command(slash_command)]
@@ -18,7 +21,9 @@ pub async fn competition(
     // TODO: figure out how to get all channels in a category, so we can check duplicate names
 
     if !has_perms(&ctx).await {
-        return Err(anyhow::anyhow!("You do not have permissions to create a competition"));
+        return Err(anyhow::anyhow!(
+            "You do not have permissions to create a competition"
+        ));
     }
 
     // TODO: prettier error
@@ -27,7 +32,8 @@ pub async fn competition(
         .category(CTF_CATEGORY_ID)
         .position(0)
         .topic(&format!("Channel for {name}"))
-        .execute(ctx, B01LERS_GUILD_ID).await?;
+        .execute(ctx, B01LERS_GUILD_ID)
+        .await?;
 
     // Send message with credentials
     let embed = CreateEmbed::new()
@@ -36,8 +42,7 @@ pub async fn competition(
         .field("Username", username, false)
         .field("Password", password, false);
 
-    let message = CreateMessage::new()
-        .add_embed(embed);
+    let message = CreateMessage::new().add_embed(embed);
 
     channel.send_message(&ctx, message).await?;
 
@@ -48,7 +53,8 @@ pub async fn competition(
     };
     ctx.data().db.create_competiton(competition).await?;
 
-    ctx.say(format!("Created channel for {name}: {channel}")).await?;
+    ctx.say(format!("Created channel for {name}: {channel}"))
+        .await?;
 
     Ok(())
 }
@@ -57,8 +63,12 @@ pub async fn competition(
 async fn get_competition_from_channel(ctx: &CmdContext<'_>) -> Result<Competition, Error> {
     let channel_id = ctx.channel_id();
 
-    let competition = ctx.data().db.get_competition(channel_id)
-        .await.with_context(|| "Not in a competition channel")?;
+    let competition = ctx
+        .data()
+        .db
+        .get_competition(channel_id)
+        .await
+        .with_context(|| "Not in a competition channel")?;
 
     Ok(competition)
 }
@@ -66,8 +76,7 @@ async fn get_competition_from_channel(ctx: &CmdContext<'_>) -> Result<Competitio
 async fn send_bingo_image(ctx: &CmdContext<'_>, image: &[u8]) -> Result<(), Error> {
     let attachment = CreateAttachment::bytes(image, "bingo_squares.png");
 
-    let reply = CreateReply::default()
-        .attachment(attachment);
+    let reply = CreateReply::default().attachment(attachment);
 
     ctx.send(reply).await?;
 
@@ -76,13 +85,13 @@ async fn send_bingo_image(ctx: &CmdContext<'_>, image: &[u8]) -> Result<(), Erro
 
 // This can never be called, just needed for bingo subcommands
 #[poise::command(slash_command, subcommands("add", "status", "remove"))]
-pub async fn bingo(_ctx: CmdContext<'_>) -> Result<(), Error> { Ok(()) }
+pub async fn bingo(_ctx: CmdContext<'_>) -> Result<(), Error> {
+    Ok(())
+}
 
 /// Displays the current status of the badctf bingo squares
 #[poise::command(slash_command)]
-pub async fn status(
-    ctx: CmdContext<'_>,
-) -> Result<(), Error> {
+pub async fn status(ctx: CmdContext<'_>) -> Result<(), Error> {
     let competition = get_competition_from_channel(&ctx).await?;
 
     send_bingo_image(&ctx, &competition.get_bingo_picture_png_bytes()?).await?;
