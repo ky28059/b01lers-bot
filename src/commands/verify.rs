@@ -8,6 +8,7 @@ use chacha20poly1305::{AeadCore, XChaCha20Poly1305, aead::{OsRng, Aead}};
 use base64::prelude::*;
 use serde::{Serialize, Deserialize};
 use serenity::all::UserId;
+use email_address_parser::EmailAddress;
 
 use crate::{commands::{CmdContext, Error}, db::User};
 
@@ -20,13 +21,17 @@ struct TokenData<'a> {
 }
 
 #[poise::command(slash_command, subcommands("email", "token"))]
-pub async fn verify(ctx: CmdContext<'_>) -> Result<(), Error> { Ok(()) }
+pub async fn verify(_ctx: CmdContext<'_>) -> Result<(), Error> { Ok(()) }
 
 /// Enter your purdue email to recieve a verification token
 #[poise::command(slash_command)]
 pub async fn email(ctx: CmdContext<'_>, email: String) -> Result<(), Error> {
-    if ctx.data().db.get_user_by_email(&email).await.is_ok() {
-        return Err(anyhow::anyhow!("Email is already verified"));
+    // None for strict email parsing
+    let parsed_email = EmailAddress::parse(&email, None)
+        .ok_or(anyhow::anyhow!("Invalid email address"))?;
+
+    if parsed_email.get_domain() != "purdue.edu" {
+        return Err(anyhow::anyhow!("Email is not a purdue.edu email"));
     }
 
     let user_id = ctx.author().id.get();
@@ -60,6 +65,7 @@ pub async fn token(ctx: CmdContext<'_>, token: String) -> Result<(), Error> {
         return Err(anyhow::anyhow!("Invalid token"));
     }
 
+    // nonce is last 24 bytes of token
     let nonce = &token_bytes[token_bytes.len() - NONCE_SIZE..];
     let nonce: [u8; NONCE_SIZE] = nonce.try_into().unwrap();
 
@@ -71,8 +77,14 @@ pub async fn token(ctx: CmdContext<'_>, token: String) -> Result<(), Error> {
     let token_data: TokenData<'_> = serde_json::from_slice(&token_bytes)?;
     let id = UserId::new(token_data.id);
 
+    // make sure verify token is being run on same discord account that used verify email
     if id != ctx.author().id {
         return Err(anyhow::anyhow!("Discord user id does not match token user id"));
+    }
+
+    // make sure email is unique
+    if ctx.data().db.get_user_by_email(token_data.email).await.is_ok() {
+        return Err(anyhow::anyhow!("Email is already verified"));
     }
 
     let user = User {
