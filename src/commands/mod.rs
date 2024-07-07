@@ -5,6 +5,7 @@ use crate::{db::DbContext, B01LERS_GUILD_ID, OFFICER_ROLE};
 pub mod competition;
 pub mod bingo;
 pub mod archive;
+pub mod challenge;
 
 pub struct CommandContext {
     db: DbContext,
