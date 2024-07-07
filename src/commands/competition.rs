@@ -7,7 +7,7 @@ use crate::db::{BingoSquare, Competition};
 
 use super::{CmdContext, Error, has_perms};
 
-/// Creates a new ctf competition thread.
+/// Creates a new ctf competition channel.
 #[poise::command(slash_command)]
 pub async fn competition(
     ctx: CmdContext<'_>,
@@ -26,13 +26,14 @@ pub async fn competition(
     }
 
     // TODO: prettier error
-    // Create channel
+    // Create forum channel
+    let creds_str = &format!("**{name}**\n{url}\n\n**Username**: {username}\n**Password**: {password}");
     let forum = CreateChannel::new(&name)
         .category(CTF_CATEGORY_ID)
         .position(0)
         .kind(ChannelType::Forum)
         .default_reaction_emoji(ForumEmoji::Id(EmojiId::new(1257157847612129351))) // :blobsalute:
-        .topic(&format!("Channel for {name}; please check pinned post for shared credentials."))
+        .topic(creds_str) // Post guidelines for forum channel
         .execute(ctx, B01LERS_GUILD_ID)
         .await?;
 
