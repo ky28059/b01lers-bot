@@ -1,6 +1,8 @@
 use poise::CreateReply;
 use serenity::all::CreateAttachment;
+
 use crate::commands::{CmdContext, Error};
+use crate::commands::competition::{get_competition_from_channel};
 
 async fn send_bingo_image(ctx: &CmdContext<'_>, image: &[u8]) -> Result<(), Error> {
     let attachment = CreateAttachment::bytes(image, "bingo_squares.png");
@@ -19,7 +21,7 @@ pub async fn bingo(_ctx: CmdContext<'_>) -> Result<(), Error> {
 /// Displays the current status of the bad ctf bingo squares
 #[poise::command(slash_command)]
 pub async fn status(ctx: CmdContext<'_>) -> Result<(), Error> {
-    let competition = crate::commands::competitions::get_competition_from_channel(&ctx).await?;
+    let competition = get_competition_from_channel(&ctx).await?;
 
     send_bingo_image(&ctx, &competition.get_bingo_picture_png_bytes()?).await?;
 
@@ -32,7 +34,7 @@ pub async fn add(
     ctx: CmdContext<'_>,
     #[description = "The bingo square to check off"] square: BingoSquare,
 ) -> Result<(), Error> {
-    let mut competition = crate::commands::competitions::get_competition_from_channel(&ctx).await?;
+    let mut competition = get_competition_from_channel(&ctx).await?;
     competition.bingo |= square;
 
     send_bingo_image(&ctx, &competition.get_bingo_picture_png_bytes()?).await?;
@@ -47,7 +49,7 @@ pub async fn remove(
     ctx: CmdContext<'_>,
     #[description = "The bingo square to uncheck"] square: BingoSquare,
 ) -> Result<(), Error> {
-    let mut competition = crate::commands::competitions::get_competition_from_channel(&ctx).await?;
+    let mut competition = get_competition_from_channel(&ctx).await?;
     competition.bingo.remove(square);
 
     send_bingo_image(&ctx, &competition.get_bingo_picture_png_bytes()?).await?;

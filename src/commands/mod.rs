@@ -2,8 +2,9 @@ use serenity::all::Member;
 
 use crate::{db::DbContext, B01LERS_GUILD_ID, OFFICER_ROLE};
 
-pub mod competitions;
+pub mod competition;
 pub mod bingo;
+pub mod archive;
 
 pub struct CommandContext {
     db: DbContext,

@@ -10,6 +10,7 @@ use db::DbContext;
 
 const B01LERS_GUILD_ID: GuildId = GuildId::new(511675552386777099);
 const CTF_CATEGORY_ID: ChannelId = ChannelId::new(534524532799569950);
+const ARCHIVED_CTF_CATEGORY_ID: ChannelId = ChannelId::new(877584240965984256);
 const OFFICER_ROLE: &str = "officer";
 
 #[tokio::main]
@@ -29,8 +30,9 @@ async fn main() {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![
-                commands::competitions::competition(),
+                commands::competition::competition(),
                 commands::bingo::bingo(),
+                commands::archive::archive()
             ],
             ..Default::default()
         })

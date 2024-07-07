@@ -8,7 +8,7 @@ use crate::{
     B01LERS_GUILD_ID, CTF_CATEGORY_ID,
 };
 
-/// Creates a new ctf competition thread
+/// Creates a new ctf competition thread.
 #[poise::command(slash_command)]
 pub async fn competition(
     ctx: CmdContext<'_>,
@@ -22,7 +22,7 @@ pub async fn competition(
 
     if !has_perms(&ctx).await {
         return Err(anyhow::anyhow!(
-            "You do not have permissions to create a competition"
+            "You do not have permissions to create a competition."
         ));
     }
 
@@ -59,8 +59,8 @@ pub async fn competition(
     Ok(())
 }
 
-/// Gets the competition based on the channel the command was invoked from
-async fn get_competition_from_channel(ctx: &CmdContext<'_>) -> Result<Competition, Error> {
+/// Gets the competition based on the channel the command was invoked from.
+pub async fn get_competition_from_channel(ctx: &CmdContext<'_>) -> Result<Competition, Error> {
     let channel_id = ctx.channel_id();
 
     let competition = ctx
@@ -68,7 +68,7 @@ async fn get_competition_from_channel(ctx: &CmdContext<'_>) -> Result<Competitio
         .db
         .get_competition(channel_id)
         .await
-        .with_context(|| "Not in a competition channel")?;
+        .with_context(|| "Not in a competition channel.")?;
 
     Ok(competition)
 }
