@@ -1,5 +1,5 @@
 use anyhow::Context;
-use serenity::all::{Builder, ChannelFlags, ChannelId, ChannelType, CreateChannel, CreateEmbed, CreateForumTag, CreateMessage, EditThread, EmojiId, ForumEmoji, ForumTag};
+use serenity::all::{Builder, ChannelFlags, ChannelId, ChannelType, CreateChannel, CreateEmbed, CreateForumTag, CreateMessage, EditChannel, EditThread, EmojiId, ForumEmoji, ReactionType};
 use serenity::builder::CreateForumPost;
 
 use crate::{B01LERS_GUILD_ID, CTF_CATEGORY_ID};
@@ -19,6 +19,9 @@ pub async fn competition(
 ) -> Result<(), Error> {
     // TODO: figure out how to get all channels in a category, so we can check duplicate names
 
+    // Defer response because channel setup may take longer than 3 seconds
+    ctx.defer().await?;
+
     if !has_perms(&ctx).await {
         return Err(anyhow::anyhow!(
             "You do not have permissions to create a competition."
@@ -28,7 +31,7 @@ pub async fn competition(
     // TODO: prettier error
     // Create forum channel
     let creds_str = &format!("**{name}**\n{url}\n\n**Username**: {username}\n**Password**: {password}");
-    let forum = CreateChannel::new(&name)
+    let mut forum = CreateChannel::new(&name)
         .category(CTF_CATEGORY_ID)
         .position(0)
         .kind(ChannelType::Forum)
@@ -36,6 +39,23 @@ pub async fn competition(
         .topic(creds_str) // Post guidelines for forum channel
         .execute(ctx, B01LERS_GUILD_ID)
         .await?;
+
+    // Add category and solved tags to forum channel
+    let tags = vec![
+        CreateForumTag::new("web").emoji(ReactionType::Unicode("🌐".to_string())),
+        CreateForumTag::new("crypto").emoji(ReactionType::Unicode("🧮".to_string())),
+        CreateForumTag::new("pwn").emoji(ReactionType::Unicode("💥".to_string())),
+        CreateForumTag::new("rev").emoji(ReactionType::Unicode("🛠️".to_string())),
+        CreateForumTag::new("misc").emoji(ReactionType::Unicode("⚙️".to_string())),
+
+        CreateForumTag::new("forensics").emoji(ReactionType::Unicode("🔍".to_string())),
+        CreateForumTag::new("osint").emoji(ReactionType::Unicode("🕵️".to_string())),
+        CreateForumTag::new("blockchain").emoji(ReactionType::Unicode("⛓".to_string())),
+
+        CreateForumTag::new("unsolved").emoji(ReactionType::Unicode("❌".to_string())),
+        CreateForumTag::new("solved").emoji(ReactionType::Unicode("✅".to_string())),
+    ];
+    forum.edit(ctx, EditChannel::new().available_tags(tags)).await?;
 
     // Create post with credentials
     let credentials_embed = CreateEmbed::new()
