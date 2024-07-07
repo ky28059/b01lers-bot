@@ -34,15 +34,14 @@ pub async fn competition(
         .await?;
 
     // Send message with credentials
-    let embed = CreateEmbed::new()
+    let credentials_embed = CreateEmbed::new()
+        .color(0xc22026)
         .title(&format!("{name} credentials"))
         .description(&format!("ctf url: {url}"))
         .field("Username", username, false)
         .field("Password", password, false);
 
-    let message = CreateMessage::new().add_embed(embed);
-
-    channel.send_message(&ctx, message).await?;
+    channel.send_message(&ctx, CreateMessage::new().add_embed(credentials_embed)).await?;
 
     let competition = Competition {
         channel_id: channel.id,

@@ -14,7 +14,7 @@ pub async fn archive(ctx: CmdContext<'_>) -> Result<(), Error> {
     }
 
     // Ensure we're in a competition channel, then move it to the archived category.
-    get_competition_from_channel(&ctx).await?;
+    let competition = get_competition_from_channel(&ctx).await?;
     let mut channel = ctx
         .guild_channel()
         .await
@@ -28,6 +28,9 @@ pub async fn archive(ctx: CmdContext<'_>) -> Result<(), Error> {
 
     channel
         .edit(ctx, EditChannel::new().category(ARCHIVED_CTF_CATEGORY_ID))
+        .await?;
+
+    ctx.say(format!("Archived channel for **{}**.", competition.name))
         .await?;
 
     Ok(())
