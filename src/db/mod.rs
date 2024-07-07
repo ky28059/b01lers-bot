@@ -26,7 +26,7 @@ impl DbContext {
         Ok(DbContext { pool })
     }
 
-    pub async fn create_competiton(&self, competition: Competition) -> Result<(), anyhow::Error> {
+    pub async fn create_competition(&self, competition: Competition) -> Result<(), anyhow::Error> {
         let competition_raw: CompetitionRaw = competition.into();
         sqlx::query!(
             "INSERT INTO competition (channel_id, name, bingo) VALUES (?, ?, ?)",
@@ -72,13 +72,13 @@ impl DbContext {
 }
 
 macro_rules! make_bingo_variants {
-    ($($bingo_name:ident: $bingo_descritpion:expr,)*) => {
+    ($($bingo_name:ident: $bingo_description:expr,)*) => {
         #[enumflags2::bitflags]
         #[repr(u32)]
         #[derive(Debug, Clone, Copy, poise::macros::ChoiceParameter, strum::FromRepr)]
         pub enum BingoSquare {
             $(
-                #[name = $bingo_descritpion]
+                #[name = $bingo_description]
                 $bingo_name,
             )*
         }
@@ -115,14 +115,14 @@ make_bingo_variants! {
 
 impl BingoSquare {
     fn from_coords(x: u32, y: u32) -> Option<BingoSquare> {
-        // each bingo square has the next bit set cause they are a bitmask
+        // each bingo square has the next bit set because they are a bitmask
         let bits = 1 << (5 * y + x);
 
         Self::from_repr(bits)
     }
 }
 
-// These have to be seperate cause apparanelty you can only have 25 choices in a discord choices argument
+// These have to be separate because apparently you can only have 25 choices in a discord choices argument
 /*TwitterDrama: "bonus: twitter drama",
 CyberLeague: "bonus: cyber league",
 AdminsBan: "bonus: admins ban over criticism",*/

@@ -3,6 +3,7 @@ use serenity::all::Member;
 use crate::{db::DbContext, B01LERS_GUILD_ID, OFFICER_ROLE};
 
 pub mod competitions;
+pub mod bingo;
 
 pub struct CommandContext {
     db: DbContext,
@@ -40,7 +41,7 @@ pub async fn is_officer(ctx: &CmdContext<'_>, member: &Member) -> bool {
 
 pub async fn has_perms(ctx: &CmdContext<'_>) -> bool {
     match ctx.author_member().await {
-        // make sure a privalidged command is being used on b01lers server
+        // make sure a privileged command is being used on b01lers server
         Some(member) => {
             member.guild_id == B01LERS_GUILD_ID && is_officer(ctx, member.as_ref()).await
         }
