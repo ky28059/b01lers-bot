@@ -1,5 +1,5 @@
 use anyhow::Context;
-use serenity::all::{Builder, ChannelFlags, ChannelId, ChannelType, CreateChannel, CreateEmbed, CreateForumTag, CreateMessage, EditChannel, EditThread, EmojiId, ForumEmoji, ReactionType};
+use serenity::all::{Builder, ChannelFlags, ChannelType, CreateChannel, CreateEmbed, CreateForumTag, CreateMessage, EditChannel, EditThread, EmojiId, ForumEmoji, ReactionType};
 use serenity::builder::CreateForumPost;
 
 use crate::{B01LERS_GUILD_ID, CTF_CATEGORY_ID};
@@ -61,18 +61,16 @@ pub async fn competition(
     let credentials_embed = CreateEmbed::new()
         .color(0xc22026)
         .title(&format!("{name} credentials"))
-        .description(&format!("ctf url: {url}"))
+        .description(url)
         .field("Username", username, false)
         .field("Password", password, false);
 
-    let message = CreateMessage::new().add_embed(credentials_embed);
-    let mut creds_channel = forum.create_forum_post(ctx, CreateForumPost::new("Login credentials", message))
+    let mut creds_channel = forum.create_forum_post(ctx, CreateForumPost::new("Credentials + general discussion", CreateMessage::new().add_embed(credentials_embed)))
         .await?;
 
-    // Pin and lock credentials post
+    // Pin credentials / general discussion post
     creds_channel.edit_thread(ctx, EditThread::new()
         .flags(ChannelFlags::PINNED)
-        .locked(true)
     ).await?;
 
     let competition = Competition {

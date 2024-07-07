@@ -5,6 +5,7 @@ use crate::{db::DbContext, B01LERS_GUILD_ID, OFFICER_ROLE};
 pub mod competition;
 pub mod bingo;
 pub mod archive;
+pub mod challenge;
 
 pub struct CommandContext {
     db: DbContext,
@@ -26,8 +27,16 @@ pub async fn say_error(ctx: &CmdContext<'_>, message: &str) -> Result<(), Error>
 }
 
 pub async fn is_officer(ctx: &CmdContext<'_>, member: &Member) -> bool {
-    let Ok(roles) = B01LERS_GUILD_ID.roles(ctx).await else {
-        return false;
+    // TODO: method chain version?
+    let roles = match ctx.cache().guild(B01LERS_GUILD_ID).map(|g| g.roles.clone()) {
+        Some(roles) => roles,
+        None => {
+            println!("cache miss");
+            let Ok(roles) = B01LERS_GUILD_ID.roles(ctx).await else {
+                return false;
+            };
+            roles
+        }
     };
 
     member
