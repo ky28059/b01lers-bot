@@ -3,15 +3,20 @@ use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
 pub use competition::{Competition, BingoSquare};
 pub use user::User;
+pub use solve::{ChallengeType, Solve};
 use competition::CompetitionRaw;
 use user::UserRaw;
+use solve::SolveRaw;
 
 mod competition;
 mod user;
+mod solve;
 
 pub struct DbContext {
     pool: SqlitePool,
 }
+
+struct OutputId { id: i64 }
 
 impl DbContext {
     /// Connects to the database at `url`
@@ -99,5 +104,36 @@ impl DbContext {
         ).fetch_one(&self.pool).await?;
 
         Ok(user_raw.into())
+    }
+
+    /// Creates a new solve solved by the given users and returns the solve id
+    pub async fn create_solve(&self, solve: Solve, users: &[UserId]) -> Result<i64, anyhow::Error> {
+        let solve_raw: SolveRaw = solve.into();
+
+        let mut transaction = self.pool.begin().await?;
+
+        let OutputId { id: solve_id } = sqlx::query_as!(
+            OutputId,
+            "INSERT INTO solves (competition_id, challenge_name, challenge_type, flag, approved)
+            VALUES (?, ?, ?, ?, ?) RETURNING id",
+            solve_raw.competition_id,
+            solve_raw.challenge_name,
+            solve_raw.challenge_type,
+            solve_raw.flag,
+            solve_raw.approved,
+        ).fetch_one(&mut *transaction).await?;
+
+        for user_id in users {
+            let user_id = user_id.get() as i64;
+            sqlx::query!(
+                "INSERT INTO user_solves (user_id, solve_id) VALUES (?, ?)",
+                user_id,
+                solve_id,
+            ).execute(&mut *transaction).await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(solve_id)
     }
 }

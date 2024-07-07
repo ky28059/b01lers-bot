@@ -33,6 +33,7 @@ async fn main() {
                 commands::competition::competition(),
                 commands::bingo::bingo(),
                 commands::archive::archive(),
+                commands::solve::solve(),
                 commands::verify::verify(),
             ],
             ..Default::default()

@@ -10,7 +10,8 @@ use serde::{Serialize, Deserialize};
 use serenity::all::UserId;
 use email_address_parser::EmailAddress;
 
-use crate::{commands::{CmdContext, Error}, db::User};
+use super::{CmdContext, Error};
+use crate::db::User;
 
 const NONCE_SIZE: usize = 24;
 
@@ -25,7 +26,10 @@ pub async fn verify(_ctx: CmdContext<'_>) -> Result<(), Error> { Ok(()) }
 
 /// Enter your purdue email to recieve a verification token
 #[poise::command(slash_command)]
-pub async fn email(ctx: CmdContext<'_>, email: String) -> Result<(), Error> {
+pub async fn email(
+    ctx: CmdContext<'_>,
+    #[description = "Purdue email to send verification token to"] email: String,
+) -> Result<(), Error> {
     // None for strict email parsing
     let parsed_email = EmailAddress::parse(&email, None)
         .ok_or(anyhow::anyhow!("Invalid email address"))?;
@@ -58,7 +62,10 @@ pub async fn email(ctx: CmdContext<'_>, email: String) -> Result<(), Error> {
 
 /// Enter the token you recieved in your purdue email to verify yourself
 #[poise::command(slash_command)]
-pub async fn token(ctx: CmdContext<'_>, token: String) -> Result<(), Error> {
+pub async fn token(
+    ctx: CmdContext<'_>,
+    #[description = "Verification token recieved from /verify email"] token: String,
+) -> Result<(), Error> {
     let token_bytes = BASE64_STANDARD.decode(token)?;
 
     if token_bytes.len() < NONCE_SIZE {
