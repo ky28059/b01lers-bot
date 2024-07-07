@@ -1,7 +1,21 @@
 # Running
 
-To run the bot, first `cargo install sqlx-cli`, and then in the .env file define 2 variables `DISCORD_TOKEN` and `DATABASE_URL`.
-
-Then run `sqlx database create` to create the database.
+To set up the bot, first install the `sqlx` CLI with 
+```bash
+cargo install sqlx-cli
+```
+Then, create a `.env` file defining 2 variables `DISCORD_TOKEN` and `DATABASE_URL` like so:
+```env
+DATABASE_URL="..."
+DISCORD_TOKEN="..."
+```
+Run
+```bash
+sqlx database create
+```
+```bash
+sqlx migrate run
+```
+to create a new local competition database.
 
 Use `cargo run` to run the bot.
