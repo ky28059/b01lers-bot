@@ -5,7 +5,7 @@ CREATE TABLE competition (
     channel_id INT NOT NULL,
     -- Name of the ctf
     name TEXT NOT NULL,
-    -- bitfield specifying which of the badctf bingos have been achieved
+    -- bitfield specifying which of the bad ctf bingos have been achieved
     bingo INT NOT NULL,
     PRIMARY KEY(channel_id)
 );

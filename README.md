@@ -13,6 +13,9 @@ Run
 ```bash
 sqlx database create
 ```
+```bash
+sqlx migrate run
+```
 to create a new local competition database.
 
 Use `cargo run` to run the bot.
