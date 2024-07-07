@@ -32,7 +32,8 @@ async fn main() {
             commands: vec![
                 commands::competition::competition(),
                 commands::bingo::bingo(),
-                commands::archive::archive()
+                commands::archive::archive(),
+                commands::verify::verify(),
             ],
             ..Default::default()
         })

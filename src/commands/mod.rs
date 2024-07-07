@@ -1,3 +1,4 @@
+use chacha20poly1305::{KeyInit, XChaCha20Poly1305, aead::OsRng};
 use serenity::all::Member;
 
 use crate::{db::DbContext, B01LERS_GUILD_ID, OFFICER_ROLE};
@@ -5,14 +6,20 @@ use crate::{db::DbContext, B01LERS_GUILD_ID, OFFICER_ROLE};
 pub mod competition;
 pub mod bingo;
 pub mod archive;
+pub mod verify;
 
 pub struct CommandContext {
     db: DbContext,
+    verify_token_cipher: XChaCha20Poly1305,
 }
 
 impl CommandContext {
     pub fn new(db: DbContext) -> Self {
-        CommandContext { db }
+        let key = XChaCha20Poly1305::generate_key(&mut OsRng);
+        CommandContext {
+            db,
+            verify_token_cipher: XChaCha20Poly1305::new(&key),
+        }
     }
 }
 
