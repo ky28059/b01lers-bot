@@ -4,8 +4,9 @@ use enumflags2::BitFlags;
 use image::{
     imageops::{overlay, FilterType},
     io::Reader as ImageReader,
-    DynamicImage, ImageFormat,
+    DynamicImage, ImageFormat, Rgba,
 };
+use imageproc::{drawing::draw_antialiased_line_segment_mut, pixelops::interpolate};
 use serenity::all::ChannelId;
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
@@ -173,6 +174,19 @@ fn bingo_coord_to_image_coord(x: u32, y: u32) -> (u32, u32) {
     (new_x, new_y)
 }
 
+fn draw_bingo_line(bingo_image: &mut DynamicImage, start: (u32, u32), end: (u32, u32)) {
+    let (start_x, start_y) = bingo_coord_to_image_coord(start.0, start.1);
+    let (end_x, end_y) = bingo_coord_to_image_coord(end.0, end.1);
+
+    draw_antialiased_line_segment_mut(
+        bingo_image,
+        (start_x as i32, start_y as i32),
+        (end_x as i32, end_y as i32),
+        Rgba([255, 0, 0, 255]),
+        interpolate,
+    );
+}
+
 #[derive(Default)]
 struct BingoChecker {
     x_count: [u8; 5],
@@ -192,6 +206,27 @@ impl BingoChecker {
 
         if x == 4 - y {
             self.negative_diag += 1;
+        }
+    }
+
+    /// Draws any winning lines in bingo
+    fn check_and_draw_win(&self, image: &mut DynamicImage) {
+        for i in 0..5 {
+            if self.x_count[i as usize] == 5 {
+                draw_bingo_line(image, (i, 0), (i, 4));
+            }
+
+            if self.y_count[i as usize] == 5 {
+                draw_bingo_line(image, (0, i), (4, i));
+            }
+        }
+
+        if self.positive_diag == 5 {
+            draw_bingo_line(image, (0, 0), (4, 4));
+        }
+
+        if self.negative_diag == 5 {
+            draw_bingo_line(image, (4, 0), (0, 4));
         }
     }
 }
@@ -216,6 +251,7 @@ impl Competition {
                 };
 
                 if self.bingo.contains(square) {
+                    println!("square: {square:?} {x} {y}");
                     solve_checker.mark(x, y);
 
                     let (x_pos, y_pos) = bingo_coord_to_image_coord(x, y);
@@ -229,6 +265,8 @@ impl Competition {
                 }
             }
         }
+
+        solve_checker.check_and_draw_win(&mut bingo_squares);
 
         Ok(bingo_squares)
     }
