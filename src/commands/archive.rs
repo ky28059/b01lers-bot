@@ -1,6 +1,6 @@
-use serenity::all::{Builder, EditChannel};
+use serenity::all::EditChannel;
 
-use crate::{ARCHIVED_CTF_CATEGORY_ID, B01LERS_GUILD_ID};
+use crate::ARCHIVED_CTF_CATEGORY_ID;
 use crate::commands::{CmdContext, Error, has_perms};
 use crate::commands::competition::get_competition_from_channel;
 
@@ -15,7 +15,7 @@ pub async fn archive(ctx: CmdContext<'_>) -> Result<(), Error> {
 
     // Ensure we're in a competition channel, then move it to the archived category.
     get_competition_from_channel(&ctx).await?;
-    let channel = ctx
+    let mut channel = ctx
         .guild_channel()
         .await
         .expect("You are not inside a guild");
@@ -27,7 +27,7 @@ pub async fn archive(ctx: CmdContext<'_>) -> Result<(), Error> {
     }
 
     channel
-        .edit(EditChannel::new().category(ARCHIVED_CTF_CATEGORY_ID))
+        .edit(ctx, EditChannel::new().category(ARCHIVED_CTF_CATEGORY_ID))
         .await?;
 
     Ok(())

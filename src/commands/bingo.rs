@@ -1,6 +1,7 @@
 use poise::CreateReply;
 use serenity::all::CreateAttachment;
 
+use crate::db::BingoSquare;
 use crate::commands::{CmdContext, Error};
 use crate::commands::competition::{get_competition_from_channel};
 

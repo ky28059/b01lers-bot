@@ -1,12 +1,10 @@
 use anyhow::Context;
-use poise::CreateReply;
-use serenity::all::{Builder, CreateAttachment, CreateChannel, CreateEmbed, CreateMessage};
+use serenity::all::{Builder, CreateChannel, CreateEmbed, CreateMessage};
 
-use super::{has_perms, CmdContext, Error};
-use crate::{
-    db::{BingoSquare, Competition},
-    B01LERS_GUILD_ID, CTF_CATEGORY_ID,
-};
+use crate::{B01LERS_GUILD_ID, CTF_CATEGORY_ID};
+use crate::db::{BingoSquare, Competition};
+
+use super::{CmdContext, Error, has_perms};
 
 /// Creates a new ctf competition thread.
 #[poise::command(slash_command)]
