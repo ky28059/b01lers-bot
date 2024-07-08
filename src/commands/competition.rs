@@ -86,8 +86,7 @@ pub async fn competition(
     Ok(())
 }
 
-/// Gets the competition in the channel the command was invoked from.
-pub async fn get_competition_from_ctx(ctx: &CmdContext<'_>) -> Result<Competition, Error> {
+pub async fn get_competition_id_from_ctx(ctx: &CmdContext<'_>) -> Result<ChannelId, Error> {
     let Some(thread_channel) = ctx.guild_channel().await else {
         Err(anyhow::anyhow!("You are not inside a competition channel."))?
     };
@@ -96,6 +95,13 @@ pub async fn get_competition_from_ctx(ctx: &CmdContext<'_>) -> Result<Competitio
     let Some(channel_id) = thread_channel.parent_id else {
         Err(anyhow::anyhow!("You are not inside a competition channel."))?
     };
+
+    Ok(channel_id)
+}
+
+/// Gets the competition in the channel the command was invoked from.
+pub async fn get_competition_from_ctx(ctx: &CmdContext<'_>) -> Result<Competition, Error> {
+    let channel_id = get_competition_id_from_ctx(ctx).await?;
 
     let competition = ctx
         .data()
