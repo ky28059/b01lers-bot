@@ -11,7 +11,7 @@ pub mod verify;
 pub mod challenge;
 
 pub struct CommandContext {
-    db: DbContext,
+    pub db: DbContext,
     verify_token_cipher: XChaCha20Poly1305,
 }
 

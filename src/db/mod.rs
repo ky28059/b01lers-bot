@@ -1,9 +1,9 @@
-use serenity::all::{ChannelId, UserId};
+use serenity::all::{ChannelId, MessageId, UserId};
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
 pub use competition::{Competition, BingoSquare};
 pub use user::User;
-pub use solve::{ChallengeType, Solve};
+pub use solve::{ChallengeType, ApprovalStatus, Solve};
 use competition::CompetitionRaw;
 use user::UserRaw;
 use solve::SolveRaw;
@@ -114,9 +114,10 @@ impl DbContext {
 
         let OutputId { id: solve_id } = sqlx::query_as!(
             OutputId,
-            "INSERT INTO solves (competition_id, challenge_name, challenge_type, flag, approved)
-            VALUES (?, ?, ?, ?, ?) RETURNING id",
+            "INSERT INTO solves (competition_id, approval_message_id, challenge_name, challenge_type, flag, approved)
+            VALUES (?, ?, ?, ?, ?, ?) RETURNING id",
             solve_raw.competition_id,
+            solve_raw.approval_message_id,
             solve_raw.challenge_name,
             solve_raw.challenge_type,
             solve_raw.flag,
@@ -135,5 +136,32 @@ impl DbContext {
         transaction.commit().await?;
 
         Ok(solve_id)
+    }
+
+    pub async fn get_solve_by_approval_message_id(&self, message_id: MessageId) -> Result<Solve, anyhow::Error> {
+        let id = message_id.get() as i64;
+        let solve_raw = sqlx::query_as!(
+            SolveRaw,
+            "SELECT * FROM solves WHERE approval_message_id = ?",
+            id,
+        ).fetch_one(&self.pool).await?;
+
+        Ok(solve_raw.into())
+    }
+
+    /// Updates the challenge name, type, flag, and approval status of the given solve
+    pub async fn update_solve(&self, solve: Solve) -> Result<(), anyhow::Error> {
+        let solve_raw: SolveRaw = solve.into();
+
+        sqlx::query!(
+            "UPDATE solves SET challenge_name = ?, challenge_type = ?, flag = ?, approved = ? WHERE id = ?",
+            solve_raw.challenge_name,
+            solve_raw.challenge_type,
+            solve_raw.flag,
+            solve_raw.approved,
+            solve_raw.id,
+        ).execute(&self.pool).await?;
+
+        Ok(())
     }
 }
