@@ -3,7 +3,8 @@ mod db;
 
 use std::env;
 use dotenvy::dotenv;
-use serenity::all::{ChannelId, ClientBuilder, GatewayIntents, GuildId};
+use poise::{BoxFuture, FrameworkContext};
+use serenity::all::{ChannelId, ClientBuilder, Context, FullEvent, GatewayIntents, GuildId, Interaction};
 
 use commands::CommandContext;
 use db::DbContext;
@@ -11,7 +12,28 @@ use db::DbContext;
 const B01LERS_GUILD_ID: GuildId = GuildId::new(511675552386777099);
 const CTF_CATEGORY_ID: ChannelId = ChannelId::new(534524532799569950);
 const ARCHIVED_CTF_CATEGORY_ID: ChannelId = ChannelId::new(877584240965984256);
+const SOLVE_APPROVALS_CHANNEL_ID: ChannelId = ChannelId::new(757358907034435686);
 const OFFICER_ROLE: &str = "officer";
+
+/// Runs for every serenity event
+///
+/// Currently needed for solve approve / reject buttons to work
+fn event_handler<'a>(
+    context: &'a Context,
+    event: &'a FullEvent,
+    _framework_context: FrameworkContext<'a, CommandContext, anyhow::Error>,
+    user_data: &'a CommandContext,
+) -> BoxFuture<'a, Result<(), anyhow::Error>> {
+    Box::pin(async move {
+        if let FullEvent::InteractionCreate {
+            interaction: Interaction::Component(component_interaction)
+        } = event {
+            commands::solve::handle_approval_button(context, user_data, component_interaction).await?;
+        }
+
+        Ok(())
+    })
+}
 
 #[tokio::main]
 async fn main() {
@@ -36,6 +58,7 @@ async fn main() {
                 commands::solve::solve(),
                 commands::verify::verify(),
             ],
+            event_handler,
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
