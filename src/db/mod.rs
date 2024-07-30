@@ -149,6 +149,24 @@ impl DbContext {
         Ok(solve_raw.into())
     }
 
+    pub async fn get_solves_for_user(&self, user_id: UserId) -> Result<Vec<Solve>, anyhow::Error> {
+        let id = user_id.get() as i64;
+        let solves = sqlx::query_as!(
+            SolveRaw,
+            "SELECT solves.* FROM user_solves
+            INNER JOIN solves ON solves.id = user_solves.solve_id
+            WHERE user_solves.user_id = ? AND solves.approved = ?",
+            id,
+            ApprovalStatus::Approved as i64,
+        ).fetch_all(&self.pool).await?;
+
+        let solves = solves.into_iter()
+            .map(|solve| Solve::from(solve))
+            .collect();
+
+        Ok(solves)
+    }
+
     /// Updates the challenge name, type, flag, and approval status of the given solve
     pub async fn update_solve(&self, solve: Solve) -> Result<(), anyhow::Error> {
         let solve_raw: SolveRaw = solve.into();

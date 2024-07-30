@@ -9,9 +9,10 @@ pub mod archive;
 pub mod solve;
 pub mod verify;
 pub mod challenge;
+pub mod stats;
 
 pub struct CommandContext {
-    pub db: DbContext,
+    db: DbContext,
     verify_token_cipher: XChaCha20Poly1305,
 }
 

@@ -3,7 +3,7 @@ use serenity::all::CreateAttachment;
 
 use crate::db::BingoSquare;
 use crate::commands::{CmdContext, Error};
-use crate::commands::competition::{get_competition_from_ctx};
+use crate::commands::competition::get_competition_from_ctx;
 
 async fn send_bingo_image(ctx: &CmdContext<'_>, image: &[u8]) -> Result<(), Error> {
     let attachment = CreateAttachment::bytes(image, "bingo_squares.png");

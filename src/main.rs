@@ -58,6 +58,7 @@ async fn main() {
                 commands::challenge::challenge(),
                 commands::solve::solve(),
                 commands::verify::verify(),
+                commands::stats::stats(),
             ],
             event_handler,
             ..Default::default()

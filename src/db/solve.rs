@@ -28,7 +28,7 @@ impl From<Solve> for SolveRaw {
 }
 
 #[repr(i64)]
-#[derive(Debug, Clone, Copy, ChoiceParameter, FromRepr, strum::Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ChoiceParameter, FromRepr, strum::Display, strum::EnumIter)]
 pub enum ChallengeType {
     #[name = "rev"]
     #[strum(to_string = "rev")]
