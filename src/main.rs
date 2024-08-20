@@ -1,10 +1,13 @@
 mod commands;
 mod db;
+mod logging;
 
 use std::env;
 use dotenvy::dotenv;
-use poise::{BoxFuture, FrameworkContext};
+use logging::init_logging;
+use poise::{BoxFuture, FrameworkContext, FrameworkError};
 use serenity::all::{ChannelId, ClientBuilder, Context, FullEvent, GatewayIntents, GuildId, Interaction};
+use tracing::{error, info};
 
 use commands::CommandContext;
 use db::DbContext;
@@ -13,6 +16,7 @@ const B01LERS_GUILD_ID: GuildId = GuildId::new(511675552386777099);
 const CTF_CATEGORY_ID: ChannelId = ChannelId::new(534524532799569950);
 const ARCHIVED_CTF_CATEGORY_ID: ChannelId = ChannelId::new(877584240965984256);
 const SOLVE_APPROVALS_CHANNEL_ID: ChannelId = ChannelId::new(757358907034435686);
+const BOT_LOG_CHANNEL: ChannelId = ChannelId::new(743238600329658459);
 const OFFICER_ROLE: &str = "officer";
 
 /// Runs for every serenity event
@@ -32,6 +36,27 @@ fn event_handler<'a>(
         }
 
         Ok(())
+    })
+}
+
+/// Runs on every error, logs the error in the error channel
+fn error_handler<'a>(
+    error: FrameworkError<'a, CommandContext, anyhow::Error>,
+) -> BoxFuture<'a, ()> {
+    Box::pin(async move {
+        // first report error in discord channel
+        match &error {
+            FrameworkError::Command { error, .. } => {
+                error!("command error: {}", error);
+            },
+            // TODO: handle other type of errors
+            _ => (),
+        }
+
+        // then report error to user
+        if let Err(e) = poise::builtins::on_error(error).await {
+            tracing::error!("Error while handling error: {}", e);
+        }
     })
 }
 
@@ -59,12 +84,17 @@ async fn main() {
                 commands::solve::solve(),
                 commands::verify::verify(),
                 commands::stats::stats(),
+                commands::stats::error(),
             ],
             event_handler,
+            on_error: error_handler,
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
+                // set up logging to bot log channel
+                init_logging(ctx.clone());
+
                 // register the bots commands with discord api on startup
                 // poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 poise::builtins::register_in_guild(
@@ -73,6 +103,9 @@ async fn main() {
                     B01LERS_GUILD_ID,
                 )
                 .await?;
+
+                info!("the bot has logged on");
+
                 Ok(CommandContext::new(db))
             })
         })
