@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use poise::CreateReply;
 use serenity::all::CreateEmbed;
 use strum::IntoEnumIterator;
@@ -37,9 +36,4 @@ pub async fn solves(ctx: CmdContext<'_>) -> Result<(), Error> {
     ctx.send(message).await?;
 
     Ok(())
-}
-
-#[poise::command(slash_command)]
-pub async fn error(ctx: CmdContext<'_>) -> Result<(), Error> {
-    Err(anyhow!("A catastrophic error has occured"))
 }

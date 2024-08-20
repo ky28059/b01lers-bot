@@ -5,7 +5,7 @@ mod logging;
 use std::env;
 use dotenvy::dotenv;
 use logging::init_logging;
-use poise::{BoxFuture, FrameworkContext, FrameworkError};
+use poise::{ApplicationContext, BoxFuture, FrameworkContext, FrameworkError, PrefixContext};
 use serenity::all::{ChannelId, ClientBuilder, Context, FullEvent, GatewayIntents, GuildId, Interaction};
 use tracing::{error, info};
 
@@ -39,6 +39,17 @@ fn event_handler<'a>(
     })
 }
 
+fn get_command_name<'a>(context: &poise::Context<'a, CommandContext, anyhow::Error>) -> &'a str {
+    match context {
+        poise::Context::Application(ApplicationContext { command, ..}) => {
+            &command.name
+        },
+        poise::Context::Prefix(PrefixContext { invoked_command_name, .. }) => {
+            invoked_command_name
+        },
+    }
+}
+
 /// Runs on every error, logs the error in the error channel
 fn error_handler<'a>(
     error: FrameworkError<'a, CommandContext, anyhow::Error>,
@@ -46,8 +57,14 @@ fn error_handler<'a>(
     Box::pin(async move {
         // first report error in discord channel
         match &error {
-            FrameworkError::Command { error, .. } => {
-                error!("command error: {}", error);
+            FrameworkError::Command { error, ctx, .. } => {
+                error!("error in `{}` command: {}", get_command_name(ctx), error);
+            },
+            FrameworkError::CommandPanic { payload: Some(payload), ctx, .. } => {
+                error!("command `{}` has paniced: {}", get_command_name(ctx), payload);
+            },
+            FrameworkError::CommandPanic { payload: None, ctx, .. } => {
+                error!("command `{}` has paniced", get_command_name(ctx));
             },
             // TODO: handle other type of errors
             _ => (),
@@ -84,7 +101,6 @@ async fn main() {
                 commands::solve::solve(),
                 commands::verify::verify(),
                 commands::stats::stats(),
-                commands::stats::error(),
             ],
             event_handler,
             on_error: error_handler,
