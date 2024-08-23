@@ -31,12 +31,6 @@ impl CommandContext {
 type Error = anyhow::Error;
 type CmdContext<'a> = poise::Context<'a, CommandContext, Error>;
 
-pub async fn say_error(ctx: &CmdContext<'_>, message: &str) -> Result<(), Error> {
-    ctx.say(&format!("Error: {message}")).await?;
-
-    Ok(())
-}
-
 pub async fn is_officer(ctx: &CmdContext<'_>, member: &Member) -> bool {
     // TODO: method chain version?
     let roles = match ctx.cache().guild(B01LERS_GUILD_ID).map(|g| g.roles.clone()) {

@@ -100,6 +100,11 @@ pub async fn token(
         return Err(anyhow::anyhow!("Email is already verified"));
     }
 
+    // make sure discord user is unique
+    if ctx.data().db.get_user_by_id(token_data.id.into()).await.is_ok() {
+        return Err(anyhow::anyhow!("Discord account is already verified"));
+    }
+
     let user = User {
         id,
         email: token_data.email.to_owned(),
