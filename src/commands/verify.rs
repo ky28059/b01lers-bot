@@ -55,7 +55,13 @@ pub async fn email(
 
     let token_base64 = BASE64_STANDARD.encode(token);
 
-    ctx.say(&format!("TODO: email token, token: {token_base64}")).await?;
+    ctx.data().email_client.send_email(
+        &email,
+        "b01lers verification",
+        &format!("Your verication token is: `{token_base64}`.<br>Use `/verify token {token_base64}` with the b01lers-bot to verify yourself."),
+    ).await?;
+
+    ctx.say("Verification token has been sent to your purdue email").await?;
 
     Ok(())
 }

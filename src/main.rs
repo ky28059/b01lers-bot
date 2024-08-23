@@ -1,9 +1,11 @@
 mod commands;
 mod db;
 mod logging;
+mod email;
 
 use std::env;
 use dotenvy::dotenv;
+use email::EmailClient;
 use logging::init_logging;
 use poise::{ApplicationContext, BoxFuture, FrameworkContext, FrameworkError, PrefixContext};
 use serenity::all::{ChannelId, ClientBuilder, Context, FullEvent, GatewayIntents, GuildId, Interaction};
@@ -86,6 +88,9 @@ async fn main() {
 
     let discord_token =
         env::var("DISCORD_TOKEN").expect("No `DISCORD_TOKEN` environment variable specified");
+    
+    let mailgun_token =
+        env::var("MAILGUN_TOKEN").expect("No `MAILGUN_TOKEN` environment variable specified");
 
     let db = DbContext::connect(&database_url)
         .await
@@ -122,7 +127,8 @@ async fn main() {
 
                 info!("the bot has logged on");
 
-                Ok(CommandContext::new(db))
+                let email_client = EmailClient::new(mailgun_token);
+                Ok(CommandContext::new(db, email_client))
             })
         })
         .build();
