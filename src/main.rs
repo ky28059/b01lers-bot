@@ -42,15 +42,10 @@ fn event_handler<'a>(
     })
 }
 
-fn get_command_name<'a>(context: &poise::Context<'a, CommandContext, anyhow::Error>) -> &'a str {
-    match context {
-        poise::Context::Application(ApplicationContext { command, ..}) => {
-            &command.name
-        },
-        poise::Context::Prefix(PrefixContext { invoked_command_name, .. }) => {
-            invoked_command_name
-        },
-    }
+fn pre_command_handler<'a>(context: poise::Context<'a, CommandContext, anyhow::Error>) -> BoxFuture<'a, ()> {
+    Box::pin(async move {
+        info!("Running command `{}`", context.invocation_string());
+    })
 }
 
 /// Runs on every error, logs the error in the error channel
@@ -61,13 +56,13 @@ fn error_handler<'a>(
         // first report error in discord channel
         match &error {
             FrameworkError::Command { error, ctx, .. } => {
-                error!("error in `{}` command: {}", get_command_name(ctx), error);
+                error!("error in `{}` command: {}", ctx.invoked_command_name(), error);
             },
             FrameworkError::CommandPanic { payload: Some(payload), ctx, .. } => {
-                error!("command `{}` has paniced: {}", get_command_name(ctx), payload);
+                error!("command `{}` has paniced: {}", ctx.invoked_command_name(), payload);
             },
             FrameworkError::CommandPanic { payload: None, ctx, .. } => {
-                error!("command `{}` has paniced", get_command_name(ctx));
+                error!("command `{}` has paniced", ctx.invoked_command_name());
             },
             // TODO: handle other type of errors
             _ => (),
@@ -109,6 +104,7 @@ async fn main() {
                 commands::stats::stats(),
             ],
             event_handler,
+            pre_command: pre_command_handler,
             on_error: error_handler,
             ..Default::default()
         })
