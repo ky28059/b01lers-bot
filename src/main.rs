@@ -20,6 +20,7 @@ const ARCHIVED_CTF_CATEGORY_ID: ChannelId = ChannelId::new(877584240965984256);
 const SOLVE_APPROVALS_CHANNEL_ID: ChannelId = ChannelId::new(757358907034435686);
 const BOT_LOG_CHANNEL: ChannelId = ChannelId::new(743238600329658459);
 const OFFICER_ROLE: &str = "officer";
+const MEMBER_ROLE: &str = "members";
 
 /// Runs for every serenity event
 ///
