@@ -1,12 +1,14 @@
 use poise::CreateReply;
-use serenity::all::{ChannelId, CreateEmbed, GetMessages, Mentionable};
+use serenity::all::{CreateEmbed, GetMessages, Mentionable};
 use strum::IntoEnumIterator;
 
+use crate::points::get_point_cutoffs;
+use crate::RANKS_NAMES;
 use crate::{db::ChallengeType, SOLVE_APPROVALS_CHANNEL_ID};
 
 use super::{CmdContext, Error};
 
-#[poise::command(slash_command, subcommands("solves", "leaderboard"))]
+#[poise::command(slash_command, subcommands("solves", "leaderboard", "rank"))]
 pub async fn stats(_ctx: CmdContext<'_>) -> Result<(), Error> {
     Ok(())
 }
@@ -64,6 +66,30 @@ pub async fn leaderboard(ctx: CmdContext<'_>) -> Result<(), Error> {
 
     embed = embed.field("Users", users, true)
         .field("Points", points, true);
+
+    let message = CreateReply::default()
+        .embed(embed);
+
+    ctx.send(message).await?;
+
+    Ok(())
+}
+
+/// Lists your points and the point requirements of other ranks
+#[poise::command(slash_command)]
+pub async fn rank(ctx: CmdContext<'_>) -> Result<(), Error> {
+    let user = ctx.data().db.get_user_by_id(ctx.author().id).await?;
+
+    let mut embed = CreateEmbed::new()
+        .title("Server Rank")
+        .description("Points can be earned through participation in the server, like sending messages or solving CTF challenges.")
+        .color(0xc22026)
+        .field("Point Total", user.points.to_string(), true);
+
+    let cutoffs = get_point_cutoffs(&ctx.data().db).await?;
+    for (i, (rank, points)) in RANKS_NAMES.iter().zip(cutoffs).enumerate() {
+        embed = embed.field(*rank, format!("Rank #{i} @ {points} points."), true);
+    }
 
     let message = CreateReply::default()
         .embed(embed);

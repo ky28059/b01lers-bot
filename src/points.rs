@@ -11,7 +11,7 @@ pub async fn get_point_cutoffs(db: &DbContext) -> anyhow::Result<[i64; RANK_COUN
 
     for i in (0..RANK_COUNT).rev() {
         cutoffs[i] = max_score;
-        max_score = (3 * max_score) / (4 * max_score);
+        max_score = (max_score as f64 * 0.75) as i64;
     }
 
     Ok(cutoffs)
