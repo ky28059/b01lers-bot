@@ -11,7 +11,7 @@ use serenity::all::UserId;
 use email_address_parser::EmailAddress;
 
 use super::{CmdContext, Error, add_role_to_user};
-use crate::{db::User, MEMBER_ROLE};
+use crate::MEMBER_ROLE;
 
 const NONCE_SIZE: usize = 24;
 
@@ -101,16 +101,13 @@ pub async fn token(
     }
 
     // make sure discord user is unique
-    if ctx.data().db.get_user_by_id(id).await.is_ok() {
-        return Err(anyhow::anyhow!("Discord account is already verified"));
+    if let Ok(user) = ctx.data().db.get_user_by_id(id).await {
+        if user.is_verified() {
+            return Err(anyhow::anyhow!("Discord account is already verified"));
+        }
     }
 
-    let user = User {
-        id,
-        email: token_data.email.to_owned(),
-    };
-
-    ctx.data().db.create_user(user).await?;
+    ctx.data().db.verify_user(id, &token_data.email).await?;
     add_role_to_user(&ctx, id, MEMBER_ROLE).await?;
 
     ctx.say("User validated!").await?;

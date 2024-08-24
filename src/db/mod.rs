@@ -74,15 +74,44 @@ impl DbContext {
         Ok(())
     }
 
-    pub async fn create_user(&self, user: User) -> Result<(), anyhow::Error> {
-        let user_raw: UserRaw = user.into();
+    async fn ensure_user_is_created(&self, user_id: UserId) {
+        let user_id = user_id.get() as i64;
+        // ignore error if user already exists
+        let _ = sqlx::query!(
+            "INSERT INTO users (id, email, points) VALUES (?, NULL, 0)",
+            user_id,
+        ).execute(&self.pool).await;
+    }
+
+    pub async fn verify_user(&self, user_id: UserId, email: &str) -> Result<(), anyhow::Error> {
+        self.ensure_user_is_created(user_id).await;
+
+        let user_id = user_id.get() as i64;
         sqlx::query!(
-            "INSERT INTO users (id, email) VALUES (?, ?)",
-            user_raw.id,
-            user_raw.email,
+            "UPDATE users SET email = ? WHERE id = ?",
+            email,
+            user_id,
         ).execute(&self.pool).await?;
 
         Ok(())
+    }
+
+    /// Gives the given user points, creating them if they don't exist
+    /// 
+    /// # Returns
+    /// 
+    /// Returns the user's points
+    pub async fn give_user_points(&self, user_id: UserId, points: i64) -> Result<i64, anyhow::Error> {
+        self.ensure_user_is_created(user_id).await;
+
+        let user_id = user_id.get() as i64;
+        let result = sqlx::query!(
+            "UPDATE users SET points = points + ? WHERE id = ? RETURNING points",
+            points,
+            user_id,
+        ).fetch_one(&self.pool).await?;
+
+        Ok(result.points)
     }
 
     pub async fn get_user_by_id(&self, id: UserId) -> Result<User, anyhow::Error> {
@@ -104,6 +133,18 @@ impl DbContext {
         ).fetch_one(&self.pool).await?;
 
         Ok(user_raw.into())
+    }
+
+    /// Gets the top `count` users with the highest points
+    pub async fn get_users_by_points(&self, count: u32) -> Result<Vec<User>, anyhow::Error> {
+        Ok(sqlx::query_as!(
+            UserRaw,
+            "SELECT * FROM users ORDER BY points DESC LIMIT ?",
+            count,
+        ).fetch_all(&self.pool).await?
+            .into_iter()
+            .map(|user| User::from(user))
+            .collect())
     }
 
     /// Creates a new solve solved by the given users and returns the solve id
@@ -178,6 +219,18 @@ impl DbContext {
             solve_raw.flag,
             solve_raw.approved,
             solve_raw.id,
+        ).execute(&self.pool).await?;
+
+        Ok(())
+    }
+
+    /// Gives all the participants of this solve some points
+    pub async fn give_points_for_solve(&self, solve_id: i64, points: i64) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            "UPDATE users SET points = points + ? WHERE id IN
+            (SELECT user_id FROM user_solves WHERE solve_id = ?)",
+            points,
+            solve_id,
         ).execute(&self.pool).await?;
 
         Ok(())

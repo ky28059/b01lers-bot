@@ -2,12 +2,13 @@ mod commands;
 mod db;
 mod logging;
 mod email;
+mod points;
 
 use std::env;
 use dotenvy::dotenv;
 use email::EmailClient;
 use logging::init_logging;
-use poise::{ApplicationContext, BoxFuture, FrameworkContext, FrameworkError, PrefixContext};
+use poise::{BoxFuture, FrameworkContext, FrameworkError};
 use serenity::all::{ChannelId, ClientBuilder, Context, FullEvent, GatewayIntents, GuildId, Interaction};
 use tracing::{error, info};
 
@@ -21,6 +22,30 @@ const SOLVE_APPROVALS_CHANNEL_ID: ChannelId = ChannelId::new(757358907034435686)
 const BOT_LOG_CHANNEL: ChannelId = ChannelId::new(743238600329658459);
 const OFFICER_ROLE: &str = "officer";
 const MEMBER_ROLE: &str = "members";
+const POINTS_PER_SOLVE: i64 = 100;
+const RANK_COUNT: usize = 20;
+const RANKS_NAMES: [&str; RANK_COUNT] = [
+    "🐟 Phish Food",
+    "📜 Script Kiddie",
+    "⌨️ /r/masterhacker",
+    "</> Inspector of Elements",
+    "❌ Cross-Site Scripter",
+    "💫 Path Explorer",
+    "🎩 White Hat",
+    "🛠️ Pwn Tool",
+    "🤫 Bad Actor",
+    "🐣 Fuzzer Duckling",
+    "🦦 ShellMammal",
+    "👾 Anti-Anti Virus",
+    "💻 Not an Enigma",
+    "🐚 Shell Popper",
+    "💸 Bounty Hunter",
+    "💼 Edge Case",
+    "🖥️ Gibson Crasher",
+    "🔥 Intrusion Creation System",
+    "🍦 Zero Cool",
+    "🌈 1337",
+];
 
 /// Runs for every serenity event
 ///
@@ -70,7 +95,7 @@ fn error_handler<'a>(
 
         // then report error to user
         if let Err(e) = poise::builtins::on_error(error).await {
-            tracing::error!("Error while handling error: {}", e);
+            error!("Error while handling error: {}", e);
         }
     })
 }
@@ -102,6 +127,7 @@ async fn main() {
                 commands::solve::solve(),
                 commands::verify::verify(),
                 commands::stats::stats(),
+                commands::stats::save_solves_channel(),
             ],
             event_handler,
             pre_command: pre_command_handler,

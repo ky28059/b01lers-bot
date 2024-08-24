@@ -1,6 +1,6 @@
 use serenity::all::{ButtonStyle, CreateButton, CreateEmbed, CreateMessage, Mentionable, Context, ComponentInteraction, ComponentInteractionDataKind, EditMessage};
 
-use crate::{db::{ApprovalStatus, ChallengeType, Solve}, SOLVE_APPROVALS_CHANNEL_ID};
+use crate::{db::{ApprovalStatus, ChallengeType, Solve}, POINTS_PER_SOLVE, SOLVE_APPROVALS_CHANNEL_ID};
 
 use super::{CmdContext, CommandContext, Error, competition::get_competition_from_ctx};
 
@@ -84,6 +84,9 @@ pub async fn handle_approval_button(context: &Context, cmd_context: &CommandCont
 
             message.edit(context, edit).await?;
         }
+
+        // give participants points for solving
+        cmd_context.db.give_points_for_solve(solve.id, POINTS_PER_SOLVE).await?;
 
         // save updated approval status
         cmd_context.db.update_solve(solve).await?;
