@@ -23,6 +23,7 @@ const BOT_LOG_CHANNEL: ChannelId = ChannelId::new(743238600329658459);
 const OFFICER_ROLE: &str = "officer";
 const MEMBER_ROLE: &str = "members";
 const POINTS_PER_SOLVE: i64 = 100;
+const POINTS_PER_MESSAGE: i64 = 1;
 const RANK_COUNT: usize = 20;
 const RANKS_NAMES: [&str; RANK_COUNT] = [
     "🐟 Phish Food",
@@ -53,7 +54,7 @@ const RANKS_NAMES: [&str; RANK_COUNT] = [
 fn event_handler<'a>(
     context: &'a Context,
     event: &'a FullEvent,
-    _framework_context: FrameworkContext<'a, CommandContext, anyhow::Error>,
+    framework_context: FrameworkContext<'a, CommandContext, anyhow::Error>,
     user_data: &'a CommandContext,
 ) -> BoxFuture<'a, Result<(), anyhow::Error>> {
     Box::pin(async move {
@@ -61,6 +62,10 @@ fn event_handler<'a>(
             interaction: Interaction::Component(component_interaction)
         } = event {
             commands::solve::handle_approval_button(context, user_data, component_interaction).await?;
+        }
+
+        if let FullEvent::Message { new_message } = event {
+            framework_context.user_data().await.db.give_user_points(new_message.author.id, POINTS_PER_MESSAGE).await?;
         }
 
         Ok(())

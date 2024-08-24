@@ -16,7 +16,7 @@ pub mod challenge;
 pub mod stats;
 
 pub struct CommandContext {
-    db: DbContext,
+    pub db: DbContext,
     verify_token_cipher: XChaCha20Poly1305,
     email_client: EmailClient,
 }
