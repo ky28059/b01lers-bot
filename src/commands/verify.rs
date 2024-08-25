@@ -108,7 +108,7 @@ pub async fn token(
     }
 
     ctx.data().db.verify_user(id, &token_data.email).await?;
-    add_role_to_user(&ctx, id, MEMBER_ROLE).await?;
+    add_role_to_user(ctx.serenity_context(), id, MEMBER_ROLE).await?;
 
     ctx.say("User validated!").await?;
 

@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use anyhow::Context;
 use chacha20poly1305::{KeyInit, XChaCha20Poly1305, aead::OsRng};
-use serenity::all::{Member, Role, RoleId, UserId};
+use serenity::all::{Member, Role, RoleId, UserId, Context};
 use tracing::info;
 
 use crate::{db::DbContext, email::EmailClient, B01LERS_GUILD_ID, OFFICER_ROLE};
@@ -35,9 +34,9 @@ impl CommandContext {
 type Error = anyhow::Error;
 type CmdContext<'a> = poise::Context<'a, CommandContext, Error>;
 
-pub async fn get_all_roles(ctx: &CmdContext<'_>) -> anyhow::Result<HashMap<RoleId, Role>> {
+pub async fn get_all_roles(ctx: &Context) -> anyhow::Result<HashMap<RoleId, Role>> {
     // TODO: method chain version?
-    match ctx.cache().guild(B01LERS_GUILD_ID).map(|g| g.roles.clone()) {
+    match ctx.cache.guild(B01LERS_GUILD_ID).map(|g| g.roles.clone()) {
         Some(roles) => Ok(roles),
         None => {
             info!("role cache miss");
@@ -47,7 +46,7 @@ pub async fn get_all_roles(ctx: &CmdContext<'_>) -> anyhow::Result<HashMap<RoleI
     }
 }
 
-pub async fn is_officer(ctx: &CmdContext<'_>, member: &Member) -> bool {
+pub async fn is_officer(ctx: &Context, member: &Member) -> bool {
     let Ok(roles) = get_all_roles(ctx).await else {
         return false;
     };
@@ -66,13 +65,13 @@ pub async fn has_perms(ctx: &CmdContext<'_>) -> bool {
     match ctx.author_member().await {
         // make sure a privileged command is being used on b01lers server
         Some(member) => {
-            member.guild_id == B01LERS_GUILD_ID && is_officer(ctx, member.as_ref()).await
+            member.guild_id == B01LERS_GUILD_ID && is_officer(ctx.serenity_context(), member.as_ref()).await
         }
         None => false,
     }
 }
 
-pub async fn role_id_for_role_name(ctx: &CmdContext<'_>, role_name: &str) -> anyhow::Result<Option<RoleId>> {
+pub async fn role_id_for_role_name(ctx: &Context, role_name: &str) -> anyhow::Result<Option<RoleId>> {
     let roles = get_all_roles(ctx).await?;
 
     for (role_id, role) in roles.iter() {
@@ -85,8 +84,10 @@ pub async fn role_id_for_role_name(ctx: &CmdContext<'_>, role_name: &str) -> any
 }
 
 /// Adds the given role name to the user in b01lers discord server
-pub async fn add_role_to_user(ctx: &CmdContext<'_>, user_id: UserId, role_name: &str) -> anyhow::Result<()> {
-    let member_role_id = role_id_for_role_name(&ctx, role_name).await?
+pub async fn add_role_to_user(ctx: &Context, user_id: UserId, role_name: &str) -> anyhow::Result<()> {
+    use anyhow::Context;
+
+    let member_role_id = role_id_for_role_name(ctx, role_name).await?
         .ok_or_else(|| anyhow::anyhow!("Role `{role_name}` does not exist"))?;
 
     let guild_member_id = B01LERS_GUILD_ID.member(ctx, user_id).await

@@ -8,6 +8,7 @@ use std::env;
 use dotenvy::dotenv;
 use email::EmailClient;
 use logging::init_logging;
+use points::give_points;
 use poise::{BoxFuture, FrameworkContext, FrameworkError};
 use serenity::all::{ChannelId, ClientBuilder, Context, FullEvent, GatewayIntents, GuildId, Interaction};
 use tracing::{error, info};
@@ -20,6 +21,7 @@ const CTF_CATEGORY_ID: ChannelId = ChannelId::new(534524532799569950);
 const ARCHIVED_CTF_CATEGORY_ID: ChannelId = ChannelId::new(877584240965984256);
 const SOLVE_APPROVALS_CHANNEL_ID: ChannelId = ChannelId::new(757358907034435686);
 const BOT_LOG_CHANNEL: ChannelId = ChannelId::new(743238600329658459);
+const RANK_UP_CHANNEL: ChannelId = ChannelId::new(879945978512277514);
 const OFFICER_ROLE: &str = "officer";
 const MEMBER_ROLE: &str = "members";
 const POINTS_PER_SOLVE: i64 = 100;
@@ -65,7 +67,10 @@ fn event_handler<'a>(
         }
 
         if let FullEvent::Message { new_message } = event {
-            framework_context.user_data().await.db.give_user_points(new_message.author.id, POINTS_PER_MESSAGE).await?;
+            // give points for sending messages
+            // this also gives points to the bot, this is intentinal
+            //framework_context.user_data().await.db.give_user_points(new_message.author.id, POINTS_PER_MESSAGE).await?;
+            give_points(context, &framework_context.user_data().await.db, new_message.author.id, POINTS_PER_MESSAGE).await?;
         }
 
         Ok(())
