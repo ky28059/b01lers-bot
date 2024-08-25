@@ -2,9 +2,9 @@ use poise::CreateReply;
 use serenity::all::{CreateEmbed, GetMessages, Mentionable};
 use strum::IntoEnumIterator;
 
+use crate::config::config;
 use crate::points::get_point_cutoffs;
-use crate::RANKS_NAMES;
-use crate::{db::ChallengeType, SOLVE_APPROVALS_CHANNEL_ID};
+use crate::db::ChallengeType;
 
 use super::{CmdContext, Error};
 
@@ -87,8 +87,9 @@ pub async fn rank(ctx: CmdContext<'_>) -> Result<(), Error> {
         .field("Point Total", user.points.to_string(), true);
 
     let cutoffs = get_point_cutoffs(&ctx.data().db).await?;
-    for (i, (rank, points)) in RANKS_NAMES.iter().zip(cutoffs).enumerate() {
-        embed = embed.field(*rank, format!("Rank #{i} @ {points} points."), true);
+    let rank_names = &config().ranks.rank_names;
+    for (i, (rank, points)) in rank_names.iter().zip(cutoffs).enumerate() {
+        embed = embed.field(rank, format!("Rank #{i} @ {points} points."), true);
     }
 
     let message = CreateReply::default()
@@ -120,7 +121,9 @@ pub async fn save_solves_channel(ctx: CmdContext<'_>) -> Result<(), Error> {
             GetMessages::new().limit(50)
         };
 
-        let mut new_messages = SOLVE_APPROVALS_CHANNEL_ID.messages(ctx, filter).await?;
+        let mut new_messages = config().server.solve_approvals_channel_id
+            .messages(ctx, filter).await?;
+
         if new_messages.len() == 0 {
             break;
         }

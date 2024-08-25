@@ -1,4 +1,4 @@
-const MAILGUN_API_URL: &str = "https://api.mailgun.net/v3/email.b01lers.com";
+use crate::config::config;
 
 pub struct EmailClient {
     mailgun_token: String,
@@ -14,10 +14,11 @@ impl EmailClient {
     pub async fn send_email(&self, dest_addr: &str, title: &str, body: &str) -> anyhow::Result<()> {
         let client = reqwest::Client::new();
 
-        let result = client.post(format!("{MAILGUN_API_URL}/messages"))
+        let url = format!("{}/messages", config().mailgun.api_base_url);
+        let result = client.post(url)
             .basic_auth("api", Some(&self.mailgun_token))
             .form(&[
-                ("from", "Purdue Capture The Flag Team <b01lers@b01lers.com>"),
+                ("from", config().mailgun.email_address.as_str()),
                 ("to", dest_addr),
                 ("subject", title),
                 ("html", body),

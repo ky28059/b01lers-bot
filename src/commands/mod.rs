@@ -4,7 +4,7 @@ use chacha20poly1305::{KeyInit, XChaCha20Poly1305, aead::OsRng};
 use serenity::all::{Member, Role, RoleId, UserId, Context};
 use tracing::info;
 
-use crate::{db::DbContext, email::EmailClient, B01LERS_GUILD_ID, OFFICER_ROLE};
+use crate::{config::config, db::DbContext, email::EmailClient};
 
 pub mod competition;
 pub mod bingo;
@@ -35,12 +35,14 @@ type Error = anyhow::Error;
 type CmdContext<'a> = poise::Context<'a, CommandContext, Error>;
 
 pub async fn get_all_roles(ctx: &Context) -> anyhow::Result<HashMap<RoleId, Role>> {
+    let guild_id = config().server.guild_id;
+
     // TODO: method chain version?
-    match ctx.cache.guild(B01LERS_GUILD_ID).map(|g| g.roles.clone()) {
+    match ctx.cache.guild(guild_id).map(|g| g.roles.clone()) {
         Some(roles) => Ok(roles),
         None => {
             info!("role cache miss");
-            let roles = B01LERS_GUILD_ID.roles(ctx).await?;
+            let roles = guild_id.roles(ctx).await?;
             Ok(roles)
         }
     }
@@ -55,7 +57,7 @@ pub async fn is_officer(ctx: &Context, member: &Member) -> bool {
         .roles
         .iter()
         .map(|role_id| match roles.get(role_id) {
-            Some(role) => role.name == OFFICER_ROLE,
+            Some(role) => role.name == config().server.officer_role,
             None => false,
         })
         .fold(false, |a, b| a || b)
@@ -65,7 +67,7 @@ pub async fn has_perms(ctx: &CmdContext<'_>) -> bool {
     match ctx.author_member().await {
         // make sure a privileged command is being used on b01lers server
         Some(member) => {
-            member.guild_id == B01LERS_GUILD_ID && is_officer(ctx.serenity_context(), member.as_ref()).await
+            member.guild_id == config().server.guild_id && is_officer(ctx.serenity_context(), member.as_ref()).await
         }
         None => false,
     }
@@ -90,10 +92,26 @@ pub async fn add_role_to_user(ctx: &Context, user_id: UserId, role_name: &str) -
     let member_role_id = role_id_for_role_name(ctx, role_name).await?
         .ok_or_else(|| anyhow::anyhow!("Role `{role_name}` does not exist"))?;
 
-    let guild_member_id = B01LERS_GUILD_ID.member(ctx, user_id).await
+    let guild_member_id = config().server.guild_id.member(ctx, user_id).await
         .with_context(|| format!("Could not add role `{role_name}`, you are not in the b01lers discord server"))?;
 
     guild_member_id.add_role(ctx, member_role_id).await
+        .with_context(|| format!("Could not add role `{role_name}`"))?;
+
+    Ok(())
+}
+
+/// Removes the given role name from the user in b01lers discord server
+pub async fn remove_role_from_user(ctx: &Context, user_id: UserId, role_name: &str) -> anyhow::Result<()> {
+    use anyhow::Context;
+
+    let member_role_id = role_id_for_role_name(ctx, role_name).await?
+        .ok_or_else(|| anyhow::anyhow!("Role `{role_name}` does not exist"))?;
+
+    let guild_member_id = config().server.guild_id.member(ctx, user_id).await
+        .with_context(|| format!("Could not add role `{role_name}`, you are not in the b01lers discord server"))?;
+
+    guild_member_id.remove_role(ctx, member_role_id).await
         .with_context(|| format!("Could not add role `{role_name}`"))?;
 
     Ok(())

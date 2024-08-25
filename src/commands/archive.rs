@@ -1,12 +1,15 @@
 use serenity::all::EditChannel;
 
-use crate::ARCHIVED_CTF_CATEGORY_ID;
+use crate::config::config;
 use crate::commands::{CmdContext, Error, has_perms};
 use crate::commands::competition::get_competition_from_ctx;
 
 /// Archives the current competition channel.
 #[poise::command(slash_command)]
 pub async fn archive(ctx: CmdContext<'_>) -> Result<(), Error> {
+    // category where archived ctf channels are sent
+    let archived_category_id = config().server.archived_ctf_category_id;
+
     if !has_perms(&ctx).await {
         return Err(anyhow::anyhow!(
             "You do not have permissions to archive a competition."
@@ -23,7 +26,7 @@ pub async fn archive(ctx: CmdContext<'_>) -> Result<(), Error> {
         .guild()
         .expect("You are not inside a competition channel.");
 
-    if channel.parent_id.is_some_and(|id| id == ARCHIVED_CTF_CATEGORY_ID) {
+    if channel.parent_id.is_some_and(|id| id == archived_category_id) {
         return Err(anyhow::anyhow!(
             "This competition is already archived!"
         ))
@@ -31,7 +34,7 @@ pub async fn archive(ctx: CmdContext<'_>) -> Result<(), Error> {
 
     // Move the channel to the archived category.
     channel
-        .edit(ctx, EditChannel::new().category(ARCHIVED_CTF_CATEGORY_ID))
+        .edit(ctx, EditChannel::new().category(archived_category_id))
         .await?;
 
     ctx.say(format!("Archived **{}**.", competition.name))

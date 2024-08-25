@@ -11,7 +11,7 @@ use serenity::all::UserId;
 use email_address_parser::EmailAddress;
 
 use super::{CmdContext, Error, add_role_to_user};
-use crate::MEMBER_ROLE;
+use crate::config::config;
 
 const NONCE_SIZE: usize = 24;
 
@@ -108,7 +108,7 @@ pub async fn token(
     }
 
     ctx.data().db.verify_user(id, &token_data.email).await?;
-    add_role_to_user(ctx.serenity_context(), id, MEMBER_ROLE).await?;
+    add_role_to_user(ctx.serenity_context(), id, &config().server.member_role).await?;
 
     ctx.say("User validated!").await?;
 

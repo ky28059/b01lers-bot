@@ -2,7 +2,7 @@ use anyhow::Context;
 use serenity::all::{Builder, ChannelFlags, ChannelType, CreateChannel, CreateEmbed, CreateForumTag, CreateMessage, EditChannel, EditThread, EmojiId, ForumEmoji, ReactionType, ChannelId};
 use serenity::builder::CreateForumPost;
 
-use crate::{B01LERS_GUILD_ID, CTF_CATEGORY_ID};
+use crate::config::config;
 use crate::db::{BingoSquare, Competition};
 
 use super::{CmdContext, Error, has_perms};
@@ -32,12 +32,12 @@ pub async fn competition(
     // Create forum channel
     let creds_str = &format!("**{name}**\n{url}\n\n**Username**: {username}\n**Password**: {password}");
     let mut forum = CreateChannel::new(&name)
-        .category(CTF_CATEGORY_ID)
+        .category(config().server.ctf_category_id)
         .position(0)
         .kind(ChannelType::Forum)
         .default_reaction_emoji(ForumEmoji::Id(EmojiId::new(1257157847612129351))) // :blobsalute:
         .topic(creds_str) // Post guidelines for forum channel
-        .execute(ctx, B01LERS_GUILD_ID)
+        .execute(ctx, config().server.guild_id)
         .await?;
 
     // Add category and solved tags to forum channel

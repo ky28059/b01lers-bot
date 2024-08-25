@@ -1,0 +1,42 @@
+[mailgun]
+api_base_url = "https://api.mailgun.net/v3/email.b01lers.com"
+email_address = "Purdue Capture The Flag Team <b01lers@b01lers.com>"
+
+[server]
+guild_id = 511675552386777099
+
+ctf_category_id = 534524532799569950
+archived_ctf_category_id = 877584240965984256
+solve_approvals_channel_id = 757358907034435686
+bot_log_channel = 743238600329658459
+rank_up_channel = 879945978512277514
+
+officer_role = "officer"
+member_role = "members"
+
+[ranks]
+points_per_solve = 100
+points_per_message = 1
+
+rank_names = [
+    "🐟 Phish Food",
+    "📜 Script Kiddie",
+    "⌨️ /r/masterhacker",
+    "</> Inspector of Elements",
+    "❌ Cross-Site Scripter",
+    "💫 Path Explorer",
+    "🎩 White Hat",
+    "🛠️ Pwn Tool",
+    "🤫 Bad Actor",
+    "🐣 Fuzzer Duckling",
+    "🦦 ShellMammal",
+    "👾 Anti-Anti Virus",
+    "💻 Not an Enigma",
+    "🐚 Shell Popper",
+    "💸 Bounty Hunter",
+    "💼 Edge Case",
+    "🖥️ Gibson Crasher",
+    "🔥 Intrusion Creation System",
+    "🍦 Zero Cool",
+    "🌈 1337",
+]

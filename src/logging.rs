@@ -4,7 +4,7 @@ use serenity::all::{ChannelId, Context, CreateEmbed, CreateMessage};
 use tracing::Level;
 use tracing_subscriber::{FmtSubscriber, fmt::MakeWriter};
 
-use crate::BOT_LOG_CHANNEL;
+use crate::config::config;
 
 struct ChannelLogger {
     context: Context,
@@ -75,7 +75,7 @@ impl Drop for ChannelWriter {
 }
 
 pub fn init_logging(context: Context) {
-    let channel_logger = ChannelLogger::new(context, BOT_LOG_CHANNEL);
+    let channel_logger = ChannelLogger::new(context, config().server.bot_log_channel);
 
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::INFO)

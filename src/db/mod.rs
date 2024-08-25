@@ -101,17 +101,21 @@ impl DbContext {
     /// # Returns
     /// 
     /// Returns the user's points
-    pub async fn give_user_points(&self, user_id: UserId, points: i64) -> Result<i64, anyhow::Error> {
+    pub async fn give_user_points(&self, user_id: UserId, points: i64) -> Result<PointsUpdate, anyhow::Error> {
         self.ensure_user_is_created(user_id).await;
 
-        let user_id = user_id.get() as i64;
+        let user_id_raw = user_id.get() as i64;
         let result = sqlx::query!(
             "UPDATE users SET points = points + ? WHERE id = ? RETURNING points",
             points,
-            user_id,
+            user_id_raw,
         ).fetch_one(&self.pool).await?;
 
-        Ok(result.points)
+        Ok(PointsUpdate {
+            user_id,
+            old_points: result.points - points,
+            new_points: result.points,
+        })
     }
 
     pub async fn get_user_by_id(&self, id: UserId) -> Result<User, anyhow::Error> {
@@ -141,10 +145,8 @@ impl DbContext {
             UserRaw,
             "SELECT * FROM users ORDER BY points DESC LIMIT ?",
             count,
-        ).fetch_all(&self.pool).await?
-            .into_iter()
-            .map(|user| User::from(user))
-            .collect())
+        ).map(|user| User::from(user))
+            .fetch_all(&self.pool).await?)
     }
 
     /// Creates a new solve solved by the given users and returns the solve id
@@ -199,11 +201,8 @@ impl DbContext {
             WHERE user_solves.user_id = ? AND solves.approved = ?",
             id,
             ApprovalStatus::Approved as i64,
-        ).fetch_all(&self.pool).await?;
-
-        let solves = solves.into_iter()
-            .map(|solve| Solve::from(solve))
-            .collect();
+        ).map(|solve| Solve::from(solve))
+            .fetch_all(&self.pool).await?;
 
         Ok(solves)
     }
@@ -225,14 +224,34 @@ impl DbContext {
     }
 
     /// Gives all the participants of this solve some points
-    pub async fn give_points_for_solve(&self, solve_id: i64, points: i64) -> Result<(), anyhow::Error> {
-        sqlx::query!(
+    pub async fn give_points_for_solve(&self, solve_id: i64, points: i64) -> Result<Vec<PointsUpdate>, anyhow::Error> {
+        let result = sqlx::query_as!(
+            PointsUpdateRaw,
             "UPDATE users SET points = points + ? WHERE id IN
-            (SELECT user_id FROM user_solves WHERE solve_id = ?)",
+            (SELECT user_id FROM user_solves WHERE solve_id = ?)
+            RETURNING id, points",
             points,
             solve_id,
-        ).execute(&self.pool).await?;
+        ).map(|update| PointsUpdate {
+            user_id: UserId::new(update.id as u64),
+            old_points: update.points - points,
+            new_points: update.points,
+        }).fetch_all(&self.pool).await?;
 
-        Ok(())
+        Ok(result)
     }
+}
+
+struct PointsUpdateRaw {
+    /// Id of user with changed points
+    id: i64,
+    /// New points for the user
+    points: i64,
+}
+
+/// Represents a change in points that occured in a sql query
+pub struct PointsUpdate {
+    pub user_id: UserId,
+    pub old_points: i64,
+    pub new_points: i64,
 }

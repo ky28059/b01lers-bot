@@ -1,6 +1,8 @@
 use serenity::all::{ButtonStyle, CreateButton, CreateEmbed, CreateMessage, Mentionable, Context, ComponentInteraction, ComponentInteractionDataKind, EditMessage};
 
-use crate::{db::{ApprovalStatus, ChallengeType, Solve}, POINTS_PER_SOLVE, SOLVE_APPROVALS_CHANNEL_ID};
+use crate::config::config;
+use crate::db::{ApprovalStatus, ChallengeType, Solve};
+use crate::points::check_rank_up;
 
 use super::{CmdContext, CommandContext, Error, competition::get_competition_from_ctx};
 
@@ -40,7 +42,8 @@ pub async fn solve(
         .button(accept_button)
         .button(reject_button);
 
-    let approval_message = SOLVE_APPROVALS_CHANNEL_ID.send_message(ctx, approval_message).await?;
+    let approval_message = config().server.solve_approvals_channel_id
+        .send_message(ctx, approval_message).await?;
 
     let solve = Solve {
         id: 0,
@@ -86,10 +89,15 @@ pub async fn handle_approval_button(context: &Context, cmd_context: &CommandCont
         }
 
         // give participants points for solving
-        cmd_context.db.give_points_for_solve(solve.id, POINTS_PER_SOLVE).await?;
+        let points_updates = cmd_context.db.give_points_for_solve(solve.id, config().ranks.points_per_solve).await?;
 
         // save updated approval status
         cmd_context.db.update_solve(solve).await?;
+
+        // rank people up as necassary
+        for points_update in points_updates {
+            check_rank_up(context, &cmd_context.db, points_update).await?;
+        }
 
         // acknowledge interaction
         interaction.defer(context).await?;
