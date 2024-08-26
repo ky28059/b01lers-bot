@@ -57,6 +57,9 @@ pub enum ChallengeType {
     #[name = "programming"]
     #[strum(to_string = "programming")]
     Programming = 8,
+    #[name = "pyjail"]
+    #[strum(to_string = "pyjail")]
+    Pyjail = 9,
 }
 
 #[repr(i64)]
