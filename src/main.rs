@@ -172,7 +172,8 @@ async fn main() {
         })
         .build();
 
-    let mut client = ClientBuilder::new(discord_token, GatewayIntents::non_privileged())
+    let intents = GatewayIntents::non_privileged().union(GatewayIntents::GUILD_MEMBERS);
+    let mut client = ClientBuilder::new(discord_token, intents)
         .framework(framework)
         .await
         .expect("Failed to create b01lers bot client");
