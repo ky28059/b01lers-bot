@@ -29,6 +29,8 @@ pub struct ServerConfig {
     pub officer_role: String,
     pub member_role: String,
     pub welcome_message: String,
+    /// Message sent to people when they join the server
+    pub join_dm_message: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

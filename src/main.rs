@@ -11,7 +11,7 @@ use email::EmailClient;
 use logging::init_logging;
 use points::give_points;
 use poise::{BoxFuture, FrameworkContext, FrameworkError};
-use serenity::all::{ClientBuilder, Context, FullEvent, GatewayIntents, Interaction};
+use serenity::all::{ClientBuilder, Context, CreateMessage, FullEvent, GatewayIntents, Interaction, Channel};
 use tracing::{error, info};
 use clap::Parser;
 
@@ -36,15 +36,31 @@ fn event_handler<'a>(
         }
 
         if let FullEvent::Message { new_message } = event {
-            // give points for sending messages
-            // this also gives points to the bot, this is intentinal
-            //framework_context.user_data().await.db.give_user_points(new_message.author.id, POINTS_PER_MESSAGE).await?;
-            give_points(
-                context,
-                &framework_context.user_data().await.db,
-                new_message.author.id,
-                config().ranks.points_per_message,
-            ).await?;
+            let channel = new_message.channel_id.to_channel(context).await?;
+
+            match channel {
+                Channel::Private(_) => info!("{} has sent a dm: `{}`", new_message.author.name, new_message.content),
+                Channel::Guild(channel) if channel.guild_id == config().server.guild_id => {
+                    // give points for sending messages
+                    // this also gives points to the bot, this is intentinal
+                    give_points(
+                        context,
+                        &framework_context.user_data().await.db,
+                        new_message.author.id,
+                        config().ranks.points_per_message,
+                    ).await?;
+                },
+                _ => (),
+            }
+        }
+
+        if let FullEvent::GuildMemberAddition { new_member } = event {
+            if new_member.guild_id == config().server.guild_id {
+                let message = CreateMessage::new()
+                    .content(&config().server.join_dm_message);
+
+                new_member.user.direct_message(context, message).await?;
+            }
         }
 
         Ok(())
