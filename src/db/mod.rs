@@ -8,6 +8,8 @@ use competition::CompetitionRaw;
 use user::UserRaw;
 use solve::SolveRaw;
 
+use crate::points::Rank;
+
 mod competition;
 mod user;
 mod solve;
@@ -104,18 +106,27 @@ impl DbContext {
     pub async fn give_user_points(&self, user_id: UserId, points: i64) -> Result<PointsUpdate, anyhow::Error> {
         self.ensure_user_is_created(user_id).await;
 
-        let user_id_raw = user_id.get() as i64;
-        let result = sqlx::query!(
-            "UPDATE users SET points = points + ? WHERE id = ? RETURNING points",
+        let user_id = user_id.get() as i64;
+        let result = sqlx::query_as!(
+            PointsUpdateRaw,
+            "UPDATE users SET points = points + ? WHERE id = ? RETURNING id, points, rank",
             points,
-            user_id_raw,
+            user_id,
         ).fetch_one(&self.pool).await?;
 
-        Ok(PointsUpdate {
+        Ok(PointsUpdate::from_raw(result, points))
+    }
+
+    pub async fn set_rank(&self, user_id: UserId, rank: Rank) -> Result<(), anyhow::Error> {
+        let user_id = user_id.get() as i64;
+        let rank: Option<i64> = rank.into();
+        sqlx::query!(
+            "UPDATE users SET rank = ? WHERE id = ?",
+            rank,
             user_id,
-            old_points: result.points - points,
-            new_points: result.points,
-        })
+        ).execute(&self.pool).await?;
+
+        Ok(())
     }
 
     pub async fn get_user_by_id(&self, id: UserId) -> Result<User, anyhow::Error> {
@@ -229,14 +240,11 @@ impl DbContext {
             PointsUpdateRaw,
             "UPDATE users SET points = points + ? WHERE id IN
             (SELECT user_id FROM user_solves WHERE solve_id = ?)
-            RETURNING id, points",
+            RETURNING id, points, rank",
             points,
             solve_id,
-        ).map(|update| PointsUpdate {
-            user_id: UserId::new(update.id as u64),
-            old_points: update.points - points,
-            new_points: update.points,
-        }).fetch_all(&self.pool).await?;
+        ).map(|update| PointsUpdate::from_raw(update, points))
+            .fetch_all(&self.pool).await?;
 
         Ok(result)
     }
@@ -247,11 +255,26 @@ struct PointsUpdateRaw {
     id: i64,
     /// New points for the user
     points: i64,
+    /// Old rank for user
+    rank: Option<i64>,
 }
 
 /// Represents a change in points that occured in a sql query
+#[derive(Debug)]
 pub struct PointsUpdate {
     pub user_id: UserId,
     pub old_points: i64,
     pub new_points: i64,
+    pub old_rank: Rank,
+}
+
+impl PointsUpdate {
+    fn from_raw(update: PointsUpdateRaw, point_increase: i64) -> Self {
+        PointsUpdate {
+            user_id: UserId::new(update.id as u64),
+            old_points: update.points - point_increase,
+            new_points: update.points,
+            old_rank: update.rank.into(),
+        }
+    }
 }

@@ -21,15 +21,19 @@ pub async fn get_point_cutoffs(db: &DbContext) -> anyhow::Result<Vec<i64>> {
     Ok(cutoffs)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum Rank {
-    Unranked,
-    Rank(usize),
+struct RankManager {
+    point_cutoffs: Vec<i64>,
 }
 
-impl Rank {
-    fn from_points(points: i64, cutoffs: &[i64]) -> Rank {
-        match cutoffs.binary_search(&points) {
+impl RankManager {
+    async fn new(db: &DbContext) -> anyhow::Result<Self> {
+        Ok(RankManager {
+            point_cutoffs: get_point_cutoffs(db).await?,
+        })
+    }
+
+    fn rank_for_points(&self, points: i64) -> Rank {
+        match self.point_cutoffs.binary_search(&points) {
             Ok(i) => Rank::Rank(i),
             Err(i) => if i == 0 {
                 // the points is less than the lowest rank
@@ -39,8 +43,16 @@ impl Rank {
             }
         }
     }
+}
 
-    fn rank_name(&self) -> Option<&'static str> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Rank {
+    Unranked,
+    Rank(usize),
+}
+
+impl Rank {
+    pub fn rank_name(&self) -> Option<&'static str> {
         match self {
             Self::Unranked => None,
             Self::Rank(i) => Some(&config().ranks.rank_names[*i])
@@ -48,11 +60,33 @@ impl Rank {
     }
 }
 
-pub async fn check_rank_up(context: &Context, db: &DbContext, points_update: PointsUpdate) -> anyhow::Result<()> {
-    let cutoffs = get_point_cutoffs(db).await?;
+impl From<Option<i64>> for Rank {
+    fn from(value: Option<i64>) -> Self {
+        match value {
+            None => Self::Unranked,
+            Some(i) => Self::Rank(i as usize),
+        }
+    }
+}
 
-    let old_rank = Rank::from_points(points_update.old_points, &cutoffs);
-    let new_rank = Rank::from_points(points_update.new_points, &cutoffs);
+impl Into<Option<i64>> for Rank {
+    fn into(self) -> Option<i64> {
+        match self {
+            Self::Unranked => None,
+            Self::Rank(i) => Some(i as i64),
+        }
+    }
+}
+
+pub async fn check_rank_up(context: &Context, db: &DbContext, points_update: PointsUpdate) -> anyhow::Result<()> {
+    let rank_manager = RankManager::new(db).await?;
+
+    // check max of current old points and rank, they might have earned a rank in the past
+    let old_rank = std::cmp::max(
+        rank_manager.rank_for_points(points_update.old_points),
+        points_update.old_rank,
+    );
+    let new_rank = rank_manager.rank_for_points(points_update.new_points);
 
     if new_rank > old_rank {
         let user = points_update.user_id.to_user(context).await?;
@@ -66,6 +100,8 @@ pub async fn check_rank_up(context: &Context, db: &DbContext, points_update: Poi
 
             config().server.rank_up_channel.send_message(context, message).await?;
         }
+
+        db.set_rank(points_update.user_id, new_rank).await?;
 
         if let Some(old_rank_name) = old_rank.rank_name() {
             remove_role_from_user(context, points_update.user_id, old_rank_name).await?; 

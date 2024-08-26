@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use chacha20poly1305::{KeyInit, XChaCha20Poly1305, aead::OsRng};
-use serenity::all::{Member, Role, RoleId, UserId, Context};
+use serenity::all::{Member, Role, RoleId, UserId, Context, User};
 use tracing::info;
 
 use crate::{config::config, db::DbContext, email::EmailClient};
@@ -83,6 +83,17 @@ pub async fn role_id_for_role_name(ctx: &Context, role_name: &str) -> anyhow::Re
     }
 
     Ok(None)
+}
+
+pub async fn user_has_role(ctx: &Context, user: &User, role_name: &str) -> anyhow::Result<bool> {
+    let Some(role_id) = role_id_for_role_name(ctx, role_name).await? else {
+        // role does not exist, so user does not have role
+        return Ok(false);
+    };
+
+    let result = user.has_role(ctx, config().server.guild_id, role_id).await?;
+
+    Ok(result)
 }
 
 /// Adds the given role name to the user in b01lers discord server

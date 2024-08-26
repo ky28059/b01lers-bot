@@ -124,6 +124,7 @@ async fn main() {
                 commands::challenge::challenge(),
                 commands::solve::solve(),
                 commands::verify::verify(),
+                commands::verify::get_roles(),
                 commands::stats::stats(),
                 commands::stats::save_solves_channel(),
             ],

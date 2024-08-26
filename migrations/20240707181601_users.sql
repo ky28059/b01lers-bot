@@ -7,5 +7,7 @@ CREATE TABLE users (
     email TEXT,
     -- points earned from sending messages (not solving challenges)
     points INT NOT NULL,
+    -- rank achieved, null if unranked
+    rank INT,
     PRIMARY KEY(id)
 );
