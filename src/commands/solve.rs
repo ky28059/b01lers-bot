@@ -1,4 +1,4 @@
-use serenity::all::{ButtonStyle, CreateButton, CreateEmbed, CreateMessage, Mentionable, Context, ComponentInteraction, ComponentInteractionDataKind, EditMessage};
+use serenity::all::{ButtonStyle, ComponentInteraction, ComponentInteractionDataKind, Context, CreateButton, CreateEmbed, CreateMessage, EditMessage, Mentionable, UserId};
 
 use crate::config::config;
 use crate::db::{ApprovalStatus, ChallengeType, Solve};
@@ -12,10 +12,40 @@ pub async fn solve(
     #[description = "Name of the challenge that was solved"] challenge_name: String,
     #[description = "Type of the challenge that was solved"] challenge_type: ChallengeType,
     #[description = "Flag of the challenge that was solved"] flag: String,
+    #[description = "First Teammate"] teammate1: Option<UserId>,
+    #[description = "Second Teammate"] teammate2: Option<UserId>,
+    #[description = "Third Teammate"] teammate3: Option<UserId>,
+    #[description = "Fourth Teammate"] teammate4: Option<UserId>,
+    #[description = "Fifth Teammate"] teammate5: Option<UserId>,
+    #[description = "Sixth Teammate"] teammate6: Option<UserId>,
     // TODO: figure out how to specify teammates
 ) -> Result<(), Error> {
     let competition = get_competition_from_ctx(&ctx).await?;
-    let solver_ids = vec![ctx.author().id];
+    let mut solver_ids = vec![ctx.author().id];
+
+    if let Some(teammate) = teammate1 {
+        solver_ids.push(teammate);
+    }
+
+    if let Some(teammate) = teammate2 {
+        solver_ids.push(teammate);
+    }
+
+    if let Some(teammate) = teammate3 {
+        solver_ids.push(teammate);
+    }
+
+    if let Some(teammate) = teammate4 {
+        solver_ids.push(teammate);
+    }
+
+    if let Some(teammate) = teammate5 {
+        solver_ids.push(teammate);
+    }
+
+    if let Some(teammate) = teammate6 {
+        solver_ids.push(teammate);
+    }
 
     let approval_embed = CreateEmbed::new()
         .title(format!("New Solve Request"))
