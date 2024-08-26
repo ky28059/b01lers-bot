@@ -28,6 +28,7 @@ pub struct ServerConfig {
     pub rank_up_channel: ChannelId,
     pub officer_role: String,
     pub member_role: String,
+    pub welcome_message: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

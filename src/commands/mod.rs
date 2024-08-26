@@ -13,6 +13,7 @@ pub mod solve;
 pub mod verify;
 pub mod challenge;
 pub mod stats;
+pub mod misc;
 
 pub struct CommandContext {
     pub db: DbContext,
