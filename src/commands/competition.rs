@@ -1,9 +1,9 @@
 use anyhow::Context;
-use serenity::all::{Builder, ChannelFlags, ChannelType, CreateChannel, CreateEmbed, CreateForumTag, CreateMessage, EditChannel, EditThread, EmojiId, ForumEmoji, ReactionType, ChannelId};
+use serenity::all::{Builder, ChannelFlags, ChannelType, CreateChannel, CreateEmbed, CreateForumTag, CreateMessage, EditChannel, EditThread, ForumEmoji, ReactionType, ChannelId};
 use serenity::builder::CreateForumPost;
 
 use crate::config::config;
-use crate::db::{BingoSquare, Competition};
+use crate::db::{BingoSquare, Competition, Challenge};
 
 use super::{CmdContext, Error, has_perms};
 
@@ -31,14 +31,14 @@ pub async fn competition(
     // TODO: prettier error
     // Create forum channel
     let creds_str = &format!("**{name}**\n{url}\n\n**Username**: {username}\n**Password**: {password}");
-    let mut forum = CreateChannel::new(&name)
+    let mut forum = dbg!(CreateChannel::new(&name)
         .category(config().server.ctf_category_id)
         .position(0)
         .kind(ChannelType::Forum)
-        .default_reaction_emoji(ForumEmoji::Id(EmojiId::new(1257157847612129351))) // :blobsalute:
+        .default_reaction_emoji(ForumEmoji::Id(config().server.ctf_default_emoji_id))
         .topic(creds_str) // Post guidelines for forum channel
         .execute(ctx, config().server.guild_id)
-        .await?;
+        .await)?;
 
     // Add category and solved tags to forum channel
     let tags = vec![
@@ -51,6 +51,8 @@ pub async fn competition(
         CreateForumTag::new("forensics").emoji(ReactionType::Unicode("🔍".to_string())),
         CreateForumTag::new("osint").emoji(ReactionType::Unicode("🕵️".to_string())),
         CreateForumTag::new("blockchain").emoji(ReactionType::Unicode("⛓".to_string())),
+        CreateForumTag::new("programming").emoji(ReactionType::Unicode("👨‍💻".to_string())),
+        CreateForumTag::new("pyjail").emoji(ReactionType::Unicode("🚔".to_string())),
 
         CreateForumTag::new("unsolved").emoji(ReactionType::Unicode("❌".to_string())),
         CreateForumTag::new("solved").emoji(ReactionType::Unicode("✅".to_string())),
@@ -111,4 +113,19 @@ pub async fn get_competition_from_ctx(ctx: &CmdContext<'_>) -> Result<Competitio
         .with_context(|| "You are not inside a competition channel.")?;
 
     Ok(competition)
+}
+
+pub async fn get_challenge_from_ctx(ctx: &CmdContext<'_>) -> Result<Challenge, Error> {
+    let Some(thread_channel) = ctx.guild_channel().await else {
+        Err(anyhow::anyhow!("You are not inside a challenge channel."))?
+    };
+
+    let challenge = ctx
+        .data()
+        .db
+        .get_challenge_by_id(thread_channel.id)
+        .await
+        .with_context(|| "You are not inside a challenge channel.")?;
+
+    Ok(challenge)
 }

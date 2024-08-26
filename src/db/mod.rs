@@ -3,15 +3,18 @@ use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
 pub use competition::{Competition, BingoSquare};
 pub use user::User;
-pub use solve::{ChallengeType, ApprovalStatus, Solve};
+pub use challenge::{Challenge, ChallengeType};
+pub use solve::{ApprovalStatus, Solve};
 use competition::CompetitionRaw;
 use user::UserRaw;
+use challenge::ChallengeRaw;
 use solve::SolveRaw;
 
 use crate::points::Rank;
 
 mod competition;
 mod user;
+mod challenge;
 mod solve;
 
 pub struct DbContext {
@@ -160,6 +163,34 @@ impl DbContext {
             .fetch_all(&self.pool).await?)
     }
 
+    /// Creates a new challenge
+    pub async fn create_challenge(&self, challenge: Challenge) -> Result<(), anyhow::Error> {
+        let challenge_raw: ChallengeRaw = challenge.into();
+
+        sqlx::query!(
+            "INSERT INTO challenges (id, competition_id, name, category)
+            VALUES (?, ?, ?, ?)",
+            challenge_raw.id,
+            challenge_raw.competition_id,
+            challenge_raw.name,
+            challenge_raw.category,
+        ).execute(&self.pool).await?;
+
+        Ok(())
+    }
+
+    pub async fn get_challenge_by_id(&self, challenge_id: ChannelId) -> Result<Challenge, anyhow::Error> {
+        let challenge_id = challenge_id.get() as i64;
+
+        let challenge = sqlx::query_as!(
+            ChallengeRaw,
+            "SELECT * FROM challenges WHERE id = ?",
+            challenge_id,
+        ).fetch_one(&self.pool).await?;
+
+        Ok(challenge.into())
+    }
+
     /// Creates a new solve solved by the given users and returns the solve id
     pub async fn create_solve(&self, solve: Solve, users: &[UserId]) -> Result<i64, anyhow::Error> {
         let solve_raw: SolveRaw = solve.into();
@@ -168,18 +199,24 @@ impl DbContext {
 
         let OutputId { id: solve_id } = sqlx::query_as!(
             OutputId,
-            "INSERT INTO solves (competition_id, approval_message_id, challenge_name, challenge_type, flag, approved)
-            VALUES (?, ?, ?, ?, ?, ?) RETURNING id",
-            solve_raw.competition_id,
+            "INSERT INTO solves (challenge_id, approval_message_id, flag, approval_status)
+            VALUES (?, ?, ?, ?) RETURNING id",
+            solve_raw.challenge_id,
             solve_raw.approval_message_id,
-            solve_raw.challenge_name,
-            solve_raw.challenge_type,
             solve_raw.flag,
-            solve_raw.approved,
+            solve_raw.approval_status,
         ).fetch_one(&mut *transaction).await?;
 
         for user_id in users {
             let user_id = user_id.get() as i64;
+
+            // ensure user exists first
+            // ignore error if user already exists
+            let _ = sqlx::query!(
+                "INSERT INTO users (id, email, points) VALUES (?, NULL, 0)",
+                user_id,
+            ).execute(&mut *transaction).await;
+
             sqlx::query!(
                 "INSERT INTO user_solves (user_id, solve_id) VALUES (?, ?)",
                 user_id,
@@ -203,31 +240,30 @@ impl DbContext {
         Ok(solve_raw.into())
     }
 
-    pub async fn get_solves_for_user(&self, user_id: UserId) -> Result<Vec<Solve>, anyhow::Error> {
+    pub async fn get_solved_challenges_for_user(&self, user_id: UserId) -> Result<Vec<Challenge>, anyhow::Error> {
         let id = user_id.get() as i64;
         let solves = sqlx::query_as!(
-            SolveRaw,
-            "SELECT solves.* FROM user_solves
-            INNER JOIN solves ON solves.id = user_solves.solve_id
-            WHERE user_solves.user_id = ? AND solves.approved = ?",
+            ChallengeRaw,
+            "SELECT challenges.* FROM solves
+            INNER JOIN user_solves ON solves.id = user_solves.solve_id
+            INNER JOIN challenges ON solves.challenge_id = challenges.id
+            WHERE user_solves.user_id = ? AND solves.approval_status = ?",
             id,
             ApprovalStatus::Approved as i64,
-        ).map(|solve| Solve::from(solve))
+        ).map(|solve| Challenge::from(solve))
             .fetch_all(&self.pool).await?;
 
         Ok(solves)
     }
 
-    /// Updates the challenge name, type, flag, and approval status of the given solve
+    /// Updates the flag, and approval status of the given solve
     pub async fn update_solve(&self, solve: Solve) -> Result<(), anyhow::Error> {
         let solve_raw: SolveRaw = solve.into();
 
         sqlx::query!(
-            "UPDATE solves SET challenge_name = ?, challenge_type = ?, flag = ?, approved = ? WHERE id = ?",
-            solve_raw.challenge_name,
-            solve_raw.challenge_type,
+            "UPDATE solves SET flag = ?, approval_status = ? WHERE id = ?",
             solve_raw.flag,
-            solve_raw.approved,
+            solve_raw.approval_status,
             solve_raw.id,
         ).execute(&self.pool).await?;
 

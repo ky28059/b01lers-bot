@@ -41,6 +41,9 @@ it starts getting really weird it becomes less useful though."""
 
 join_dm_message = "Welcome to b01lers! To verify yourself as a Purdue University student, just type `/verify email <your-@purdue.edu-email-address-here>`"
 
+# :blobsolute: emoji on b01lers
+ctf_default_emoji_id = 1257157847612129351
+
 [ranks]
 points_per_solve = 100
 points_per_message = 1

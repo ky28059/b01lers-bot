@@ -2,7 +2,7 @@ use std::{path::Path, sync::OnceLock};
 
 use tokio::fs::read_to_string;
 use serde::{Serialize, Deserialize};
-use serenity::all::{GuildId, ChannelId};
+use serenity::all::{ChannelId, EmojiId, GuildId};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -31,6 +31,7 @@ pub struct ServerConfig {
     pub welcome_message: String,
     /// Message sent to people when they join the server
     pub join_dm_message: String,
+    pub ctf_default_emoji_id: EmojiId,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

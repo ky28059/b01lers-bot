@@ -1,65 +1,25 @@
-use serenity::all::{ChannelId, MessageId};
-use poise::macros::ChoiceParameter;
+use serenity::all::{MessageId, ChannelId};
 use strum::FromRepr;
 
 #[derive(Debug, Clone)]
 pub struct SolveRaw {
     pub id: i64,
-    pub competition_id: i64,
+    pub challenge_id: i64,
     pub approval_message_id: i64,
-    pub challenge_name: String,
-    pub challenge_type: i64,
     pub flag: String,
-    pub approved: i64,
+    pub approval_status: i64,
 }
 
 impl From<Solve> for SolveRaw {
     fn from(value: Solve) -> Self {
         SolveRaw {
             id: value.id,
-            competition_id: value.competition_id.get() as i64,
+            challenge_id: value.challenge_id.get() as i64,
             approval_message_id: value.approval_message_id.get() as i64,
-            challenge_name: value.challenge_name,
-            challenge_type: value.challenge_type as i64,
             flag: value.flag,
-            approved: value.approved as i64,
+            approval_status: value.approval_status as i64,
         }
     }
-}
-
-#[repr(i64)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ChoiceParameter, FromRepr, strum::Display, strum::EnumIter)]
-pub enum ChallengeType {
-    #[name = "rev"]
-    #[strum(to_string = "rev")]
-    Rev = 0,
-    #[name = "pwn"]
-    #[strum(to_string = "pwn")]
-    Pwn = 1,
-    #[name = "web"]
-    #[strum(to_string = "web")]
-    Web = 2,
-    #[name = "crypto"]
-    #[strum(to_string = "crypto")]
-    Crypto = 3,
-    #[name = "misc"]
-    #[strum(to_string = "misc")]
-    Misc = 4,
-    #[name = "osint"]
-    #[strum(to_string = "osint")]
-    Osint = 5,
-    #[name = "forensics"]
-    #[strum(to_string = "forensics")]
-    Forensics = 6,
-    #[name = "blockchain"]
-    #[strum(to_string = "blockchain")]
-    Blockchain = 7,
-    #[name = "programming"]
-    #[strum(to_string = "programming")]
-    Programming = 8,
-    #[name = "pyjail"]
-    #[strum(to_string = "pyjail")]
-    Pyjail = 9,
 }
 
 #[repr(i64)]
@@ -73,25 +33,20 @@ pub enum ApprovalStatus {
 #[derive(Debug, Clone)]
 pub struct Solve {
     pub id: i64,
-    pub competition_id: ChannelId,
+    pub challenge_id: ChannelId,
     pub approval_message_id: MessageId,
-    pub challenge_name: String,
-    pub challenge_type: ChallengeType,
     pub flag: String,
-    pub approved: ApprovalStatus,
+    pub approval_status: ApprovalStatus,
 }
 
 impl From<SolveRaw> for Solve {
     fn from(value: SolveRaw) -> Self {
         Solve {
             id: value.id,
-            competition_id: ChannelId::new(value.competition_id as u64),
+            challenge_id: ChannelId::new(value.id as u64),
             approval_message_id: MessageId::new(value.approval_message_id as u64),
-            challenge_name: value.challenge_name,
-            challenge_type: ChallengeType::from_repr(value.challenge_type)
-                .expect("invalid challenge type returned from database"),
             flag: value.flag,
-            approved: ApprovalStatus::from_repr(value.approved)
+            approval_status: ApprovalStatus::from_repr(value.approval_status)
                 .expect("invalid approval status returned from database"),
         }
     }

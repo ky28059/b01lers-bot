@@ -17,7 +17,7 @@ pub async fn stats(_ctx: CmdContext<'_>) -> Result<(), Error> {
 #[poise::command(slash_command)]
 pub async fn solves(ctx: CmdContext<'_>) -> Result<(), Error> {
     let user_id = ctx.author().id;
-    let solves = ctx.data().db.get_solves_for_user(user_id).await?;
+    let solves = ctx.data().db.get_solved_challenges_for_user(user_id).await?;
 
     let mut stats_embed = CreateEmbed::new()
         .title("CTF Solve Stats")
@@ -26,7 +26,7 @@ pub async fn solves(ctx: CmdContext<'_>) -> Result<(), Error> {
 
     for category in ChallengeType::iter() {
         let solve_count = solves.iter()
-            .filter(|solve| solve.challenge_type == category)
+            .filter(|solve| solve.category == category)
             .count();
 
         stats_embed = stats_embed.field(category.to_string(), solve_count.to_string(), true);
