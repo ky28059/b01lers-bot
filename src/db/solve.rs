@@ -32,28 +32,31 @@ impl From<Solve> for SolveRaw {
 pub enum ChallengeType {
     #[name = "rev"]
     #[strum(to_string = "rev")]
-    Rev,
+    Rev = 0,
     #[name = "pwn"]
     #[strum(to_string = "pwn")]
-    Pwn,
+    Pwn = 1,
     #[name = "web"]
     #[strum(to_string = "web")]
-    Web,
+    Web = 2,
     #[name = "crypto"]
     #[strum(to_string = "crypto")]
-    Crypto,
+    Crypto = 3,
     #[name = "misc"]
     #[strum(to_string = "misc")]
-    Misc,
+    Misc = 4,
     #[name = "osint"]
     #[strum(to_string = "osint")]
-    Osint,
+    Osint = 5,
     #[name = "forensics"]
     #[strum(to_string = "forensics")]
-    Forensics,
+    Forensics = 6,
     #[name = "blockchain"]
     #[strum(to_string = "blockchain")]
-    Blockchain,
+    Blockchain = 7,
+    #[name = "programming"]
+    #[strum(to_string = "programming")]
+    Programming = 8,
 }
 
 #[repr(i64)]
