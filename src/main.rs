@@ -156,13 +156,13 @@ async fn main() {
                 init_logging(ctx.clone());
 
                 // register the bots commands with discord api on startup
-                // poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                poise::builtins::register_in_guild(
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                /*poise::builtins::register_in_guild(
                     ctx,
                     &framework.options().commands,
                     config().server.guild_id,
                 )
-                .await?;
+                .await?;*/
 
                 info!("the bot has logged on");
 
