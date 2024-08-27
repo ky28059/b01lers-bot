@@ -118,3 +118,10 @@ pub async fn give_points(context: &Context, db: &DbContext, user_id: UserId, poi
 
     Ok(())
 }
+
+/// Converts points to a string to be displayed
+/// 
+/// Points are displayed factor of 10 less with a decimal place
+pub fn points_to_string(points: i64) -> String {
+    format!("{}.{}", points / 10, points.abs() % 10)
+}

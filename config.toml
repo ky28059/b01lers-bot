@@ -45,8 +45,9 @@ join_dm_message = "Welcome to b01lers! To verify yourself as a Purdue University
 ctf_default_emoji_id = 1257157847612129351
 
 [ranks]
-points_per_solve = 100
-points_per_message = 1
+# points are diveded by 10, so 1 point here is 0.1
+points_per_solve = 1000
+points_per_message = 2
 
 rank_names = [
     "🐟 Phish Food",

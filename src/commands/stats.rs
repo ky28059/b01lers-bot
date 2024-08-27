@@ -3,7 +3,7 @@ use serenity::all::{CreateEmbed, GetMessages, Mentionable};
 use strum::IntoEnumIterator;
 
 use crate::config::config;
-use crate::points::get_point_cutoffs;
+use crate::points::{get_point_cutoffs, points_to_string};
 use crate::db::ChallengeType;
 
 use super::{CmdContext, Error};
@@ -61,7 +61,7 @@ pub async fn leaderboard(ctx: CmdContext<'_>) -> Result<(), Error> {
         };
 
         users.push_str(&format!("{position}{}\n", user.id.mention()));
-        points.push_str(&format!("{}\n", user.points));
+        points.push_str(&format!("{}\n", points_to_string(user.points)));
     }
 
     embed = embed.field("Users", users, true)
@@ -84,12 +84,12 @@ pub async fn rank(ctx: CmdContext<'_>) -> Result<(), Error> {
         .title("Server Rank")
         .description("Points can be earned through participation in the server, like sending messages or solving CTF challenges.")
         .color(0xc22026)
-        .field("Point Total", user.points.to_string(), true);
+        .field("Point Total", points_to_string(user.points), true);
 
     let cutoffs = get_point_cutoffs(&ctx.data().db).await?;
     let rank_names = &config().ranks.rank_names;
     for (i, (rank, points)) in rank_names.iter().zip(cutoffs).enumerate() {
-        embed = embed.field(rank, format!("Rank #{i} @ {points} points."), true);
+        embed = embed.field(rank, format!("Rank #{i} @ {} points.", points_to_string(points)), true);
     }
 
     let message = CreateReply::default()
