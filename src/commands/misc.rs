@@ -1,4 +1,7 @@
-use super::{CmdContext, Error, add_role_to_user};
+use poise::CreateReply;
+use serenity::all::{CreateMessage, UserId};
+
+use super::{add_role_to_user, has_perms, is_officer, CmdContext, Error};
 use crate::config::config;
 
 /// Displays the welcome message
@@ -32,6 +35,30 @@ pub async fn get_roles(ctx: CmdContext<'_>) -> Result<(), Error> {
     } else {
         ctx.say("You don't have any roles to get").await?;
     }
+
+    Ok(())
+}
+
+#[poise::command(slash_command)]
+pub async fn dm(
+    ctx: CmdContext<'_>,
+    #[description = "User to send message to"] user: UserId,
+    #[description = "Message to send"] message: String,
+) -> Result<(), Error> {
+    if !has_perms(&ctx).await {
+        return Err(anyhow::anyhow!("You do not have permissions to send a dm."));
+    }
+
+    let message = CreateMessage::new()
+        .content(message);
+
+    user.direct_message(ctx, message).await?;
+
+    let command_reply = CreateReply::default()
+        .content("Message sent")
+        .ephemeral(true);
+
+    ctx.send(command_reply).await?;
 
     Ok(())
 }
