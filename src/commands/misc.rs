@@ -1,7 +1,7 @@
 use poise::CreateReply;
 use serenity::all::{CreateMessage, UserId};
 
-use super::{add_role_to_user, has_perms, is_officer, CmdContext, Error};
+use super::{add_role_to_user, has_perms, CmdContext, Error};
 use crate::config::config;
 
 /// Displays the welcome message

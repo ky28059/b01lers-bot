@@ -43,12 +43,12 @@ fn event_handler<'a>(
                 Channel::Guild(channel) if channel.guild_id == config().server.guild_id => {
                     // give points for sending messages
                     // this also gives points to the bot, this is intentinal
-                    /*give_points(
+                    give_points(
                         context,
                         &framework_context.user_data().await.db,
                         new_message.author.id,
                         config().ranks.points_per_message,
-                    ).await?;*/
+                    ).await?;
                 },
                 _ => (),
             }
@@ -141,10 +141,6 @@ async fn main() {
                 commands::solve::solve(),
                 commands::verify::verify(),
                 commands::stats::stats(),
-                commands::stats::save_solves_channel(),
-                commands::stats::save_solves_channel_processed(),
-                commands::stats::save_user_ranks(),
-                commands::stats::save_channels(),
                 commands::misc::welcome(),
                 commands::misc::get_roles(),
                 commands::misc::dm(),
