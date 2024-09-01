@@ -1,22 +1,24 @@
 mod commands;
-mod db;
-mod logging;
-mod email;
-mod points;
 mod config;
+mod db;
+mod email;
+mod logging;
+mod points;
 
-use std::{env, path::PathBuf};
+use clap::Parser;
 use dotenvy::dotenv;
 use email::EmailClient;
 use logging::init_logging;
 use points::give_points;
 use poise::{BoxFuture, FrameworkContext, FrameworkError};
-use serenity::all::{ClientBuilder, Context, CreateMessage, FullEvent, GatewayIntents, Interaction, Channel};
+use serenity::all::{
+    Channel, ClientBuilder, Context, CreateMessage, FullEvent, GatewayIntents, Interaction,
+};
+use std::{env, path::PathBuf};
 use tracing::{error, info};
-use clap::Parser;
 
-use config::config;
 use commands::CommandContext;
+use config::config;
 use db::DbContext;
 
 /// Runs for every serenity event
@@ -30,16 +32,21 @@ fn event_handler<'a>(
 ) -> BoxFuture<'a, Result<(), anyhow::Error>> {
     Box::pin(async move {
         if let FullEvent::InteractionCreate {
-            interaction: Interaction::Component(component_interaction)
-        } = event {
-            commands::solve::handle_approval_button(context, user_data, component_interaction).await?;
+            interaction: Interaction::Component(component_interaction),
+        } = event
+        {
+            commands::solve::handle_approval_button(context, user_data, component_interaction)
+                .await?;
         }
 
         if let FullEvent::Message { new_message } = event {
             let channel = new_message.channel_id.to_channel(context).await?;
 
             match channel {
-                Channel::Private(_) => info!("{} has sent a dm: `{}`", new_message.author.name, new_message.content),
+                Channel::Private(_) => info!(
+                    "{} has sent a dm: `{}`",
+                    new_message.author.name, new_message.content
+                ),
                 Channel::Guild(channel) if channel.guild_id == config().server.guild_id => {
                     // give points for sending messages
                     // this also gives points to the bot, this is intentinal
@@ -48,16 +55,16 @@ fn event_handler<'a>(
                         &framework_context.user_data().await.db,
                         new_message.author.id,
                         config().ranks.points_per_message,
-                    ).await?;
-                },
+                    )
+                    .await?;
+                }
                 _ => (),
             }
         }
 
         if let FullEvent::GuildMemberAddition { new_member } = event {
             if new_member.guild_id == config().server.guild_id {
-                let message = CreateMessage::new()
-                    .content(&config().server.join_dm_message);
+                let message = CreateMessage::new().content(&config().server.join_dm_message);
 
                 new_member.user.direct_message(context, message).await?;
             }
@@ -67,7 +74,9 @@ fn event_handler<'a>(
     })
 }
 
-fn pre_command_handler<'a>(context: poise::Context<'a, CommandContext, anyhow::Error>) -> BoxFuture<'a, ()> {
+fn pre_command_handler<'a>(
+    context: poise::Context<'a, CommandContext, anyhow::Error>,
+) -> BoxFuture<'a, ()> {
     Box::pin(async move {
         info!("Running command `{}`", context.invocation_string());
     })
@@ -81,14 +90,28 @@ fn error_handler<'a>(
         // first report error in discord channel
         match &error {
             FrameworkError::Command { error, ctx, .. } => {
-                error!("error in `{}` command: {}", ctx.invoked_command_name(), error);
-            },
-            FrameworkError::CommandPanic { payload: Some(payload), ctx, .. } => {
-                error!("command `{}` has paniced: {}", ctx.invoked_command_name(), payload);
-            },
-            FrameworkError::CommandPanic { payload: None, ctx, .. } => {
+                error!(
+                    "error in `{}` command: {}",
+                    ctx.invoked_command_name(),
+                    error
+                );
+            }
+            FrameworkError::CommandPanic {
+                payload: Some(payload),
+                ctx,
+                ..
+            } => {
+                error!(
+                    "command `{}` has paniced: {}",
+                    ctx.invoked_command_name(),
+                    payload
+                );
+            }
+            FrameworkError::CommandPanic {
+                payload: None, ctx, ..
+            } => {
                 error!("command `{}` has paniced", ctx.invoked_command_name());
-            },
+            }
             // TODO: handle other type of errors
             _ => (),
         }
@@ -113,7 +136,8 @@ struct CliArgs {
 async fn main() {
     let args = CliArgs::parse();
 
-    config::load_config(&PathBuf::from(args.config)).await
+    config::load_config(&PathBuf::from(args.config))
+        .await
         .expect("Failed to load config file");
 
     dotenv().ok();
@@ -123,7 +147,7 @@ async fn main() {
 
     let discord_token =
         env::var("DISCORD_TOKEN").expect("No `DISCORD_TOKEN` environment variable specified");
-    
+
     let mailgun_token =
         env::var("MAILGUN_TOKEN").expect("No `MAILGUN_TOKEN` environment variable specified");
 
@@ -157,12 +181,12 @@ async fn main() {
 
                 // register the bots commands with discord api on startup
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                /*poise::builtins::register_in_guild(
-                    ctx,
-                    &framework.options().commands,
-                    config().server.guild_id,
-                )
-                .await?;*/
+                // poise::builtins::register_in_guild(
+                //     ctx,
+                //     &framework.options().commands,
+                //     config().server.guild_id,
+                // )
+                // .await?;
 
                 info!("the bot has logged on");
 
