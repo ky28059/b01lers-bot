@@ -6,7 +6,6 @@ Pin login details in ctf forum page
 Maybe instructions to use /challenge?
 Change challenge category
 Change category during solve
-change pyjail category to jail
 ephemeral verify email and verify token command
 	to go along with this, maybe epehemeral errors so tokens aren't leaked
 prettier marks and lines for badctf bingo
@@ -21,3 +20,4 @@ Figure out why it seems like some people have to run verify token twice?
 Done:
 solve without challenge channel
 Print out teammates in solve approval request
+change pyjail category to jail
