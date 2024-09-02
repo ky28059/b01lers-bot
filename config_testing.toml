@@ -47,7 +47,7 @@ ctf_default_emoji_id = 1277745827204567050
 [ranks]
 # points are diveded by 10, so 1 point here is 0.1
 points_per_solve = 1000
-points_per_message = 2
+points_per_message = 3
 
 rank_names = [
     "rank1",

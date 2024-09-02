@@ -163,20 +163,20 @@ impl DbContext {
             .fetch_all(&self.pool).await?)
     }
 
-    /// Creates a new challenge
-    pub async fn create_challenge(&self, challenge: Challenge) -> Result<(), anyhow::Error> {
+    /// Creates a new challenge, returning its id
+    pub async fn create_challenge(&self, challenge: Challenge) -> Result<i64, anyhow::Error> {
         let challenge_raw: ChallengeRaw = challenge.into();
 
-        sqlx::query!(
-            "INSERT INTO challenges (id, competition_id, name, category)
-            VALUES (?, ?, ?, ?)",
-            challenge_raw.id,
+        let id = sqlx::query!(
+            "INSERT INTO challenges (competition_id, name, category, channel_id)
+            VALUES (?, ?, ?, ?) RETURNING id",
             challenge_raw.competition_id,
             challenge_raw.name,
             challenge_raw.category,
-        ).execute(&self.pool).await?;
+            challenge_raw.channel_id,
+        ).fetch_one(&self.pool).await?.id;
 
-        Ok(())
+        Ok(id)
     }
 
     pub async fn get_challenge_by_id(&self, challenge_id: ChannelId) -> Result<Challenge, anyhow::Error> {

@@ -37,10 +37,11 @@ pub async fn challenge(
     ).await?;
 
     let challenge = Challenge {
-        id: thread.id,
+        id: 0,
         competition_id: competition.channel_id,
         name: name.clone(),
         category,
+        channel_id: Some(thread.id),
     };
     ctx.data().db.create_challenge(challenge).await?;
 

@@ -31,14 +31,14 @@ pub async fn competition(
     // TODO: prettier error
     // Create forum channel
     let creds_str = &format!("**{name}**\n{url}\n\n**Username**: {username}\n**Password**: {password}");
-    let mut forum = dbg!(CreateChannel::new(&name)
+    let mut forum = CreateChannel::new(&name)
         .category(config().server.ctf_category_id)
         .position(0)
         .kind(ChannelType::Forum)
         .default_reaction_emoji(ForumEmoji::Id(config().server.ctf_default_emoji_id))
         .topic(creds_str) // Post guidelines for forum channel
         .execute(ctx, config().server.guild_id)
-        .await)?;
+        .await?;
 
     // Add category and solved tags to forum channel
     let tags = vec![

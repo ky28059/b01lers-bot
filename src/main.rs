@@ -163,6 +163,7 @@ async fn main() {
                 commands::archive::archive(),
                 commands::challenge::challenge(),
                 commands::solve::solve(),
+                commands::solve::quick_solve(),
                 commands::verify::verify(),
                 commands::stats::stats(),
                 commands::misc::welcome(),

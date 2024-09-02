@@ -1,11 +1,20 @@
-use serenity::all::{ButtonStyle, ComponentInteraction, ComponentInteractionDataKind, Context, CreateButton, CreateEmbed, CreateMessage, EditMessage, EditThread, Mentionable, UserId};
+use serenity::all::{ButtonStyle, ComponentInteraction, ComponentInteractionDataKind, Context, CreateButton, CreateEmbed, CreateMessage, EditMessage, EditThread, Mentionable, Message, UserId};
 
 use crate::config::config;
-use crate::db::{ApprovalStatus, Solve};
+use crate::db::{ApprovalStatus, Challenge, ChallengeType, Competition, Solve};
 use crate::points::check_rank_up;
 
 use super::{CmdContext, CommandContext, Error, competition::{get_competition_from_ctx, get_challenge_from_ctx}};
 
+fn append_solver_ids(solvers: &mut Vec<UserId>, solver_ids: &[Option<UserId>]) {
+    for solver_id in solver_ids {
+        if let Some(id) = solver_id {
+            solvers.push(*id);
+        }
+    }
+}
+
+/// Marks the current channel's challenge as solved
 #[poise::command(slash_command)]
 pub async fn solve(
     ctx: CmdContext<'_>,
@@ -33,58 +42,22 @@ pub async fn solve(
         .ok_or_else(|| anyhow::anyhow!("You are not inside a challenge channel."))?;
 
     let mut solver_ids = vec![ctx.author().id];
+    append_solver_ids(&mut solver_ids, &[
+        teammate1,
+        teammate2,
+        teammate3,
+        teammate4,
+        teammate5,
+        teammate6,
+    ]);
 
-    if let Some(teammate) = teammate1 {
-        solver_ids.push(teammate);
-    }
-
-    if let Some(teammate) = teammate2 {
-        solver_ids.push(teammate);
-    }
-
-    if let Some(teammate) = teammate3 {
-        solver_ids.push(teammate);
-    }
-
-    if let Some(teammate) = teammate4 {
-        solver_ids.push(teammate);
-    }
-
-    if let Some(teammate) = teammate5 {
-        solver_ids.push(teammate);
-    }
-
-    if let Some(teammate) = teammate6 {
-        solver_ids.push(teammate);
-    }
-
-    let approval_embed = CreateEmbed::new()
-        .title(format!("New Solve Request"))
-        .description(format!("Here is a new CTF solve request submitted by {}", ctx.author().id.mention()))
-        .color(0xc22026)
-        .thumbnail("https://pbs.twimg.com/profile_images/568451513295441921/9Hm60msK_400x400.png")
-        .field("Challenge", &challenge.name, true)
-        .field("Category", challenge.category.to_string(), true)
-        .field("CTF", competition.channel_id.mention().to_string(), true)
-        .field("Flag", format!("```{flag}```"), true);
-
-    let accept_button = CreateButton::new("accept")
-        .label("Accept")
-        .emoji('✅')
-        .style(ButtonStyle::Success);
-
-    let reject_button = CreateButton::new("reject")
-        .label("Reject")
-        .emoji('❎')
-        .style(ButtonStyle::Danger);
-
-    let approval_message = CreateMessage::new()
-        .add_embed(approval_embed)
-        .button(accept_button)
-        .button(reject_button);
-
-    let approval_message = config().server.solve_approvals_channel_id
-        .send_message(ctx, approval_message).await?;
+    let approval_message = send_approval_message(
+        &ctx,
+        &competition,
+        &challenge,
+        &solver_ids,
+        &flag,
+    ).await?;
 
     let solve = Solve {
         id: 0,
@@ -107,6 +80,109 @@ pub async fn solve(
     ctx.say(format!("Your solve for {} has been recorded with request ID {solve_id}.", challenge.name)).await?;
 
     Ok(())
+}
+
+/// Solve a challenge without needing to create a challenge channel
+#[poise::command(slash_command)]
+pub async fn quick_solve(
+    ctx: CmdContext<'_>,
+    #[description = "The name of the challenge"] name: String,
+    #[description = "Type category of the challenge"] category: ChallengeType,
+    #[description = "Flag of the challenge that was solved"] flag: String,
+    #[description = "First Teammate"] teammate1: Option<UserId>,
+    #[description = "Second Teammate"] teammate2: Option<UserId>,
+    #[description = "Third Teammate"] teammate3: Option<UserId>,
+    #[description = "Fourth Teammate"] teammate4: Option<UserId>,
+    #[description = "Fifth Teammate"] teammate5: Option<UserId>,
+    #[description = "Sixth Teammate"] teammate6: Option<UserId>,
+) -> Result<(), Error> {
+    let competition = get_competition_from_ctx(&ctx).await?;
+
+    let mut solver_ids = vec![ctx.author().id];
+    append_solver_ids(&mut solver_ids, &[
+        teammate1,
+        teammate2,
+        teammate3,
+        teammate4,
+        teammate5,
+        teammate6,
+    ]);
+
+    let mut challenge = Challenge {
+        id: 0,
+        competition_id: competition.channel_id,
+        name: name.clone(),
+        category,
+        channel_id: None,
+    };
+    challenge.id = ctx.data().db.create_challenge(challenge.clone()).await?;
+    
+    let approval_message = send_approval_message(
+        &ctx,
+        &competition,
+        &challenge,
+        &solver_ids,
+        &flag,
+    ).await?;
+
+    let solve = Solve {
+        id: 0,
+        challenge_id: challenge.id,
+        approval_message_id: approval_message.id,
+        flag,
+        approval_status: ApprovalStatus::Pending,
+    };
+
+    let solve_id = ctx.data().db.create_solve(solve, &solver_ids).await?;
+
+    ctx.say(format!("Your solve for {} has been recorded with request ID {solve_id}.", challenge.name)).await?;
+
+    Ok(())
+}
+
+async fn send_approval_message(
+    ctx: &CmdContext<'_>,
+    competition: &Competition,
+    challenge: &Challenge,
+    solver_ids: &[UserId],
+    flag: &str,
+) -> anyhow::Result<Message> {
+    let teammate_string = solver_ids
+        .iter()
+        .map(|id| id.mention().to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    let approval_embed = CreateEmbed::new()
+        .title(format!("New Solve Request"))
+        .description(format!("Here is a new CTF solve request submitted by {}", ctx.author().id.mention()))
+        .color(0xc22026)
+        .thumbnail("https://pbs.twimg.com/profile_images/568451513295441921/9Hm60msK_400x400.png")
+        .field("Challenge", &challenge.name, true)
+        .field("Category", challenge.category.to_string(), true)
+        .field("CTF", competition.channel_id.mention().to_string(), true)
+        .field("Flag", format!("```{flag}```"), false)
+        .field("Participants", teammate_string, false);
+
+    let accept_button = CreateButton::new("accept")
+        .label("Accept")
+        .emoji('✅')
+        .style(ButtonStyle::Success);
+
+    let reject_button = CreateButton::new("reject")
+        .label("Reject")
+        .emoji('❎')
+        .style(ButtonStyle::Danger);
+
+    let approval_message = CreateMessage::new()
+        .add_embed(approval_embed)
+        .button(accept_button)
+        .button(reject_button);
+
+    let approval_message = config().server.solve_approvals_channel_id
+        .send_message(ctx, approval_message).await?;
+
+    Ok(approval_message)
 }
 
 /// Recieves Component Interaction events and updates solve status if they are an approval button

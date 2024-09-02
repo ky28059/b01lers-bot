@@ -8,15 +8,17 @@ pub struct ChallengeRaw {
     pub competition_id: i64,
     pub name: String,
     pub category: i64,
+    pub channel_id: Option<i64>,
 }
 
 impl From<Challenge> for ChallengeRaw {
     fn from(value: Challenge) -> Self {
         ChallengeRaw {
-            id: value.id.get() as i64,
+            id: value.id,
             competition_id: value.competition_id.get() as i64,
             name: value.name,
             category: value.category as i64,
+            channel_id: value.channel_id.map(|id| id.get() as i64),
         }
     }
 }
@@ -58,20 +60,22 @@ pub enum ChallengeType {
 
 #[derive(Debug, Clone)]
 pub struct Challenge {
-    pub id: ChannelId,
+    pub id: i64,
     pub competition_id: ChannelId,
     pub name: String,
     pub category: ChallengeType,
+    pub channel_id: Option<ChannelId>,
 }
 
 impl From<ChallengeRaw> for Challenge {
     fn from(value: ChallengeRaw) -> Self {
         Challenge {
-            id: ChannelId::new(value.id as u64),
+            id: value.id,
             competition_id: ChannelId::new(value.competition_id as u64),
             name: value.name,
             category: ChallengeType::from_repr(value.category)
                 .expect("invalid challenge category returned from database"),
+            channel_id: value.channel_id.map(|id| ChannelId::new(id as u64)),
         }
     }
 }
