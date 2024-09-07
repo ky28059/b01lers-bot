@@ -25,7 +25,10 @@ pub async fn solve(
     #[description = "Fourth Teammate"] teammate4: Option<UserId>,
     #[description = "Fifth Teammate"] teammate5: Option<UserId>,
     #[description = "Sixth Teammate"] teammate6: Option<UserId>,
-    // TODO: figure out how to specify teammates
+    #[description = "Seventh Teammate"] teammate7: Option<UserId>,
+    #[description = "Eigth Teammate"] teammate8: Option<UserId>,
+    #[description = "Ninth Teammate"] teammate9: Option<UserId>,
+    #[description = "Tenth Teammate"] teammate10: Option<UserId>,
 ) -> Result<(), Error> {
     let competition = get_competition_from_ctx(&ctx).await?;
     let challenge = get_challenge_from_ctx(&ctx).await?;
@@ -49,6 +52,10 @@ pub async fn solve(
         teammate4,
         teammate5,
         teammate6,
+        teammate7,
+        teammate8,
+        teammate9,
+        teammate10,
     ]);
 
     let approval_message = send_approval_message(
@@ -95,6 +102,10 @@ pub async fn quick_solve(
     #[description = "Fourth Teammate"] teammate4: Option<UserId>,
     #[description = "Fifth Teammate"] teammate5: Option<UserId>,
     #[description = "Sixth Teammate"] teammate6: Option<UserId>,
+    #[description = "Seventh Teammate"] teammate7: Option<UserId>,
+    #[description = "Eigth Teammate"] teammate8: Option<UserId>,
+    #[description = "Ninth Teammate"] teammate9: Option<UserId>,
+    #[description = "Tenth Teammate"] teammate10: Option<UserId>,
 ) -> Result<(), Error> {
     let competition = get_competition_from_ctx(&ctx).await?;
 
@@ -106,6 +117,10 @@ pub async fn quick_solve(
         teammate4,
         teammate5,
         teammate6,
+        teammate7,
+        teammate8,
+        teammate9,
+        teammate10,
     ]);
 
     let mut challenge = Challenge {

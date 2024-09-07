@@ -2,7 +2,6 @@ Deregister old bot commands
 Do not log bots dm's that it sends
 Do not log dm command
 Better email template
-Pin login details in ctf forum page
 Maybe instructions to use /challenge?
 Change challenge category
 Change category during solve
@@ -23,3 +22,4 @@ solve without challenge channel
 Print out teammates in solve approval request
 change pyjail category to jail
 welcome category
+Pin login details in ctf forum page
