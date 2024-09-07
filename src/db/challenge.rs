@@ -56,6 +56,9 @@ pub enum ChallengeType {
     #[name = "jail"]
     #[strum(to_string = "jail")]
     Jail = 9,
+    #[name = "welcome"]
+    #[strum(to_string = "welcome")]
+    Welcome = 10,
 }
 
 #[derive(Debug, Clone)]

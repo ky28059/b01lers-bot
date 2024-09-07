@@ -179,12 +179,12 @@ impl DbContext {
         Ok(id)
     }
 
-    pub async fn get_challenge_by_id(&self, challenge_id: ChannelId) -> Result<Challenge, anyhow::Error> {
+    pub async fn get_challenge_by_channel_id(&self, challenge_id: ChannelId) -> Result<Challenge, anyhow::Error> {
         let challenge_id = challenge_id.get() as i64;
 
         let challenge = sqlx::query_as!(
             ChallengeRaw,
-            "SELECT * FROM challenges WHERE id = ?",
+            "SELECT * FROM challenges WHERE channel_id = ?",
             challenge_id,
         ).fetch_one(&self.pool).await?;
 

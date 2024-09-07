@@ -42,6 +42,8 @@ pub async fn competition(
 
     // Add category and solved tags to forum channel
     let tags = vec![
+        CreateForumTag::new("welcome").emoji(ReactionType::Unicode("🎉".to_string())),
+
         CreateForumTag::new("web").emoji(ReactionType::Unicode("🌐".to_string())),
         CreateForumTag::new("crypto").emoji(ReactionType::Unicode("🧮".to_string())),
         CreateForumTag::new("pwn").emoji(ReactionType::Unicode("💥".to_string())),
@@ -52,7 +54,7 @@ pub async fn competition(
         CreateForumTag::new("osint").emoji(ReactionType::Unicode("🕵️".to_string())),
         CreateForumTag::new("blockchain").emoji(ReactionType::Unicode("⛓".to_string())),
         CreateForumTag::new("programming").emoji(ReactionType::Unicode("👨‍💻".to_string())),
-        CreateForumTag::new("pyjail").emoji(ReactionType::Unicode("🚔".to_string())),
+        CreateForumTag::new("jail").emoji(ReactionType::Unicode("🚔".to_string())),
 
         CreateForumTag::new("unsolved").emoji(ReactionType::Unicode("❌".to_string())),
         CreateForumTag::new("solved").emoji(ReactionType::Unicode("✅".to_string())),
@@ -123,7 +125,7 @@ pub async fn get_challenge_from_ctx(ctx: &CmdContext<'_>) -> Result<Challenge, E
     let challenge = ctx
         .data()
         .db
-        .get_challenge_by_id(thread_channel.id)
+        .get_challenge_by_channel_id(thread_channel.id)
         .await
         .with_context(|| "You are not inside a challenge channel.")?;
 
