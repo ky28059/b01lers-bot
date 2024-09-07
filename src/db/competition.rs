@@ -118,8 +118,8 @@ fn draw_bingo_line(bingo_image: &mut DynamicImage, start: (u32, u32), end: (u32,
 
     draw_antialiased_line_segment_mut(
         bingo_image,
-        (start_x as i32, start_y as i32),
-        (end_x as i32, end_y as i32),
+        (start_x as i32 - 10, start_y as i32),
+        (end_x as i32 - 10, end_y as i32),
         Rgba([255, 0, 0, 255]),
         interpolate,
     );
@@ -189,7 +189,6 @@ impl Competition {
                 };
 
                 if self.bingo.contains(square) {
-                    println!("square: {square:?} {x} {y}");
                     solve_checker.mark(x, y);
 
                     let (x_pos, y_pos) = bingo_coord_to_image_coord(x, y);

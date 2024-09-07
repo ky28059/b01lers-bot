@@ -77,6 +77,12 @@ pub async fn competition(
         .flags(ChannelFlags::PINNED)
     ).await?;
 
+    // Pin credentials message in creds channel
+    if let Some(creds_message_id) = creds_channel.last_message_id {
+        let creds_message = creds_channel.message(ctx, creds_message_id).await?;
+        creds_message.pin(ctx).await?;
+    }
+
     let competition = Competition {
         channel_id: forum.id,
         name: name.clone(),
