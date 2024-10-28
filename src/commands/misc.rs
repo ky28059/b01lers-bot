@@ -16,7 +16,7 @@ pub async fn welcome(ctx: CmdContext<'_>) -> Result<(), Error> {
 #[poise::command(slash_command)]
 pub async fn get_roles(ctx: CmdContext<'_>) -> Result<(), Error> {
     let user_id = ctx.author().id;
-    let user = ctx.data().db.get_user_by_id(ctx.author().id).await?;
+    let user = ctx.data().conn().await.get_user_by_id(ctx.author().id).await?;
 
     let mut roles_given = Vec::new();
 

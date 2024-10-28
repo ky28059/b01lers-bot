@@ -17,7 +17,7 @@ pub async fn stats(_ctx: CmdContext<'_>) -> Result<(), Error> {
 #[poise::command(slash_command)]
 pub async fn solves(ctx: CmdContext<'_>) -> Result<(), Error> {
     let user_id = ctx.author().id;
-    let solves = ctx.data().db.get_solved_challenges_for_user(user_id).await?;
+    let solves = ctx.data().conn().await.get_solved_challenges_for_user(user_id).await?;
 
     let mut stats_embed = CreateEmbed::new()
         .title("CTF Solve Stats")
@@ -52,7 +52,7 @@ pub async fn leaderboard(ctx: CmdContext<'_>) -> Result<(), Error> {
     let mut users = String::new();
     let mut points = String::new();
 
-    for (i, user) in ctx.data().db.get_users_by_points(10).await?.iter().enumerate() {
+    for (i, user) in ctx.data().conn().await.get_users_by_points(10).await?.iter().enumerate() {
         let position = match i {
             0 => "🥇".to_string(),
             1 => "🥈".to_string(),
@@ -78,7 +78,9 @@ pub async fn leaderboard(ctx: CmdContext<'_>) -> Result<(), Error> {
 /// Lists your points and the point requirements of other ranks
 #[poise::command(slash_command)]
 pub async fn rank(ctx: CmdContext<'_>) -> Result<(), Error> {
-    let user = ctx.data().db.get_user_by_id(ctx.author().id).await?;
+    let mut conn = ctx.data().conn().await;
+
+    let user = conn.get_user_by_id(ctx.author().id).await?;
 
     let mut embed = CreateEmbed::new()
         .title("Server Rank")
@@ -86,7 +88,7 @@ pub async fn rank(ctx: CmdContext<'_>) -> Result<(), Error> {
         .color(0xc22026)
         .field("Point Total", points_to_string(user.points), true);
 
-    let cutoffs = get_point_cutoffs(&ctx.data().db).await?;
+    let cutoffs = get_point_cutoffs(&mut conn).await?;
     let rank_names = &config().ranks.rank_names;
     for (i, (rank, points)) in rank_names.iter().zip(cutoffs).enumerate() {
         embed = embed.field(rank, format!("Rank #{i} @ {} points.", points_to_string(points)), true);

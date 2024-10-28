@@ -95,20 +95,24 @@ pub async fn token(
         return Err(anyhow::anyhow!("Discord user id does not match token user id"));
     }
 
+    let mut conn = ctx.data().conn().await;
+
     // make sure email is unique
-    if ctx.data().db.get_user_by_email(token_data.email).await.is_ok() {
+    if conn.get_user_by_email(token_data.email).await.is_ok() {
         return Err(anyhow::anyhow!("Email is already verified"));
     }
 
     // make sure discord user is unique
-    if let Ok(user) = ctx.data().db.get_user_by_id(id).await {
+    if let Ok(user) = conn.get_user_by_id(id).await {
         if user.is_verified() {
             return Err(anyhow::anyhow!("Discord account is already verified"));
         }
     }
 
-    ctx.data().db.verify_user(id, &token_data.email).await?;
+    conn.verify_user(id, &token_data.email).await?;
     add_role_to_user(ctx.serenity_context(), id, &config().server.member_role).await?;
+
+    conn.commit().await?;
 
     ctx.say("User validated!").await?;
 

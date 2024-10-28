@@ -48,15 +48,19 @@ fn event_handler<'a>(
                     new_message.author.name, new_message.content
                 ),
                 Channel::Guild(channel) if channel.guild_id == config().server.guild_id => {
+                    let mut conn = framework_context.user_data().await.conn().await;
+
                     // give points for sending messages
                     // this also gives points to the bot, this is intentinal
                     give_points(
                         context,
-                        &framework_context.user_data().await.db,
+                        &mut conn,
                         new_message.author.id,
                         config().ranks.points_per_message,
                     )
                     .await?;
+
+                    conn.commit().await?;
                 }
                 _ => (),
             }

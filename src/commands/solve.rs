@@ -74,7 +74,11 @@ pub async fn solve(
         approval_status: ApprovalStatus::Pending,
     };
 
-    let solve_id = ctx.data().db.create_solve(solve, &solver_ids).await?;
+    let mut conn = ctx.data().conn().await;
+
+    let solve_id = conn.create_solve(solve, &solver_ids).await?;
+
+    conn.commit().await?;
 
     // mark challenge channel as solved
     let tag_ids = competition_forum_channel.available_tags
@@ -123,6 +127,8 @@ pub async fn quick_solve(
         teammate10,
     ]);
 
+    let mut conn = ctx.data().conn().await;
+
     let mut challenge = Challenge {
         id: 0,
         competition_id: competition.channel_id,
@@ -130,7 +136,7 @@ pub async fn quick_solve(
         category,
         channel_id: None,
     };
-    challenge.id = ctx.data().db.create_challenge(challenge.clone()).await?;
+    challenge.id = conn.create_challenge(challenge.clone()).await?;
     
     let approval_message = send_approval_message(
         &ctx,
@@ -148,7 +154,9 @@ pub async fn quick_solve(
         approval_status: ApprovalStatus::Pending,
     };
 
-    let solve_id = ctx.data().db.create_solve(solve, &solver_ids).await?;
+    let solve_id = conn.create_solve(solve, &solver_ids).await?;
+
+    conn.commit().await?;
 
     ctx.say(format!("Your solve for {} has been recorded with request ID {solve_id}.", challenge.name)).await?;
 
@@ -202,9 +210,11 @@ async fn send_approval_message(
 
 /// Recieves Component Interaction events and updates solve status if they are an approval button
 pub async fn handle_approval_button(context: &Context, cmd_context: &CommandContext, interaction: &ComponentInteraction) -> anyhow::Result<()> {
+    let mut conn = cmd_context.conn().await;
+
     if matches!(interaction.data.kind, ComponentInteractionDataKind::Button) {
         let mut message = interaction.message.clone();
-        let mut solve = cmd_context.db.get_solve_by_approval_message_id(message.id).await?;
+        let mut solve = conn.get_solve_by_approval_message_id(message.id).await?;
 
         if solve.approval_status != ApprovalStatus::Pending {
             message.reply(context, format!("solve is alredy {}", solve.approval_status)).await?;
@@ -212,11 +222,11 @@ pub async fn handle_approval_button(context: &Context, cmd_context: &CommandCont
             solve.approval_status = ApprovalStatus::Approved;
 
             // give participants points for solving
-            let points_updates = cmd_context.db.give_points_for_solve(solve.id, config().ranks.points_per_solve).await?;
+            let points_updates = conn.give_points_for_solve(solve.id, config().ranks.points_per_solve).await?;
 
             // rank people up as necassary
             for points_update in points_updates {
-                check_rank_up(context, &cmd_context.db, points_update).await?;
+                check_rank_up(context, &mut conn, points_update).await?;
             }
 
             let edit = EditMessage::new()
@@ -237,7 +247,9 @@ pub async fn handle_approval_button(context: &Context, cmd_context: &CommandCont
         }
 
         // save updated approval status
-        cmd_context.db.update_solve(solve).await?;
+        conn.update_solve(solve).await?;
+
+        conn.commit().await?;
 
         // acknowledge interaction
         interaction.defer(context).await?;

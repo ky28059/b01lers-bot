@@ -38,8 +38,12 @@ pub async fn add(
     let mut competition = get_competition_from_ctx(&ctx).await?;
     competition.bingo |= square;
 
+    let mut conn = ctx.data().conn().await;
+
     send_bingo_image(&ctx, &competition.get_bingo_picture_png_bytes()?).await?;
-    ctx.data().db.update_competition(competition).await?;
+    conn.update_competition(competition).await?;
+
+    conn.commit().await?;
 
     Ok(())
 }
@@ -53,8 +57,12 @@ pub async fn remove(
     let mut competition = get_competition_from_ctx(&ctx).await?;
     competition.bingo.remove(square);
 
+    let mut conn = ctx.data().conn().await;
+
     send_bingo_image(&ctx, &competition.get_bingo_picture_png_bytes()?).await?;
-    ctx.data().db.update_competition(competition).await?;
+    conn.update_competition(competition).await?;
+
+    conn.commit().await?;
 
     Ok(())
 }

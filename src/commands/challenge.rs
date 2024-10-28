@@ -36,6 +36,8 @@ pub async fn challenge(
         .set_applied_tags(tag_ids)
     ).await?;
 
+    let mut conn = ctx.data().conn().await;
+
     let challenge = Challenge {
         id: 0,
         competition_id: competition.channel_id,
@@ -43,12 +45,15 @@ pub async fn challenge(
         category,
         channel_id: Some(thread.id),
     };
-    ctx.data().db.create_challenge(challenge).await?;
+    conn.create_challenge(challenge).await?;
+
+    conn.commit().await?;
 
     let success_embed = CreateEmbed::new()
         .color(0xc22026)
         .description(&format!("Created channel for **{category}/{name}**.\n→ {thread}"));
 
     ctx.send(CreateReply { embeds: vec![success_embed], ..Default::default() }).await?;
+
     Ok(())
 }

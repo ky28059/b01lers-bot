@@ -4,7 +4,7 @@ use chacha20poly1305::{KeyInit, XChaCha20Poly1305, aead::OsRng};
 use serenity::all::{Member, Role, RoleId, UserId, Context, User};
 use tracing::info;
 
-use crate::{config::config, db::DbContext, email::EmailClient};
+use crate::{config::config, db::{DbConn, DbContext}, email::EmailClient};
 
 pub mod competition;
 pub mod bingo;
@@ -29,6 +29,10 @@ impl CommandContext {
             verify_token_cipher: XChaCha20Poly1305::new(&key),
             email_client,
         }
+    }
+
+    pub async fn conn(&self) -> DbConn {
+        self.db.conn().await
     }
 }
 

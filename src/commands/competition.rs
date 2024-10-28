@@ -83,12 +83,16 @@ pub async fn competition(
         creds_message.pin(ctx).await?;
     }
 
+    let mut conn = ctx.data().conn().await;
+
     let competition = Competition {
         channel_id: forum.id,
         name: name.clone(),
         bingo: BingoSquare::Free.into(),
     };
-    ctx.data().db.create_competition(competition).await?;
+    conn.create_competition(competition).await?;
+
+    conn.commit().await?;
 
     ctx.say(format!("Created channel for **{name}**: {forum}"))
         .await?;
@@ -115,7 +119,8 @@ pub async fn get_competition_from_ctx(ctx: &CmdContext<'_>) -> Result<Competitio
 
     let competition = ctx
         .data()
-        .db
+        .conn()
+        .await
         .get_competition(channel_id)
         .await
         .with_context(|| "You are not inside a competition channel.")?;
@@ -130,7 +135,8 @@ pub async fn get_challenge_from_ctx(ctx: &CmdContext<'_>) -> Result<Challenge, E
 
     let challenge = ctx
         .data()
-        .db
+        .conn()
+        .await
         .get_challenge_by_channel_id(thread_channel.id)
         .await
         .with_context(|| "You are not inside a challenge channel.")?;

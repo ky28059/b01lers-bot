@@ -14,6 +14,8 @@ backups procedure
 yeet command but with ferris
 detect duplicate channels
 
+fix accept challenge race condition
+
 Figure out this do not have permissions to send dm thing
 Figure out why it seems like some people have to run verify token twice?
 
